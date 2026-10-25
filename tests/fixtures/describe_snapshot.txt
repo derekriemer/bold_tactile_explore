@@ -120,16 +120,16 @@ Crossings and junctions
     against 1 mm).
 
 Close parallels
-  unnamed road and Main Street run 0.0 mm apart (edge to edge) for 4.9 mm near x = 108 mm,
-    y = 136 mm; they need 3 mm to stay separate under the finger.
   Fraser River and Main Street run 0.0 mm apart (edge to edge) for 19.9 mm near x = 159 mm,
     y = 29 mm; they need 3 mm to stay separate under the finger.
   Fraser River and Main Street run 0.0 mm apart (edge to edge) for 19.7 mm near x = 30 mm,
     y = 196 mm; they need 3 mm to stay separate under the finger.
   Jim Creek and Main Street run 0.0 mm apart (edge to edge) for 10.0 mm near x = 143 mm, y = 62 mm;
     they need 3 mm to stay separate under the finger.
-  Fraser River and Jim Creek run 0.0 mm apart (edge to edge) for 9.5 mm near x = 138 mm, y = 50 mm;
-    they need 3 mm to stay separate under the finger.
+  Fraser River and Village Cabriolet run 0.0 mm apart (edge to edge) for 10.1 mm near x = 107 mm,
+    y = 79 mm; they need 3 mm to stay separate under the finger.
+  Main Street and Winter Park Drive run 0.3 mm apart (edge to edge) for 4.7 mm near x = 19 mm,
+    y = 200 mm; they need 3 mm to stay separate under the finger.
 
 Cross-sections
 Terrain height without raised lines, every 10 mm.
