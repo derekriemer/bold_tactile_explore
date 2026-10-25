@@ -17,6 +17,7 @@ from tactile_terrain.geo import projected_bounds, utm_crs_for
 from tactile_terrain.pipeline.stages import run_pipeline
 from tactile_terrain.providers import nominatim
 from tactile_terrain.providers.base import BBox
+from tactile_terrain.providers.cache import using_cache_dir
 from tactile_terrain.providers.usgs3dep import available_resolutions
 from tactile_terrain.registry import elevation_providers, line_providers
 from tactile_terrain.spec import Spec, load_spec, save_spec, validate_registry_names
@@ -252,3 +253,54 @@ def analyze_model(name: str) -> str:
     spec = load_spec(spec_path)
     result = run_pipeline(spec, model_dir, cfg.printer(spec.print.printer))
     return "\n".join([f"Analysis of model {name}:", _analysis_text(spec, result, cfg)])
+
+
+def _print_points(spec: Spec, hf, model_dir) -> list:
+    """Named peaks and passes from OSM, placed in print mm and kept if inside the footprint."""
+    from tactile_terrain.describe import PrintPoint
+    from tactile_terrain.geo import lonlat_transformer
+
+    if not any(f.provider == "osm" for f in spec.features):
+        return []
+    west, south, east, north = (float(v) for v in spec.area.bbox)
+    with using_cache_dir(model_dir / "cache"):
+        points = line_providers.get("osm").fetch_points((west, south, east, north))
+    to_world = lonlat_transformer(hf.transform.crs)
+    ny, nx = hf.z.shape
+    width, depth = (nx - 1) * hf.grid_mm, (ny - 1) * hf.grid_mm
+    placed = []
+    for p in points:
+        x, y = (float(v) for v in hf.transform.world_to_print(*to_world.transform(p.lon, p.lat)))
+        if 0 <= x <= width and 0 <= y <= depth:
+            placed.append(PrintPoint(p.name, p.kind, x, y, p.elevation_m))
+    return placed
+
+
+def describe_model(name: str, sections: list[dict] | None = None) -> str:
+    """The full text description of a built model. `sections` adds extra cross-sections."""
+    from tactile_terrain.describe import DescribeInput, describe
+
+    cfg = load_config()
+    model_dir = cfg.models_path / name
+    spec_path = model_dir / "spec.json"
+    if not spec_path.exists():
+        raise FileNotFoundError(f"No model named {name} in {cfg.models_path}.")
+    spec = load_spec(spec_path)
+    result = run_pipeline(spec, model_dir, cfg.printer(spec.print.printer))
+    hf = result["lines"]
+    m = DescribeInput(
+        spec=spec,
+        profile=apply_overrides(load_profile(spec.style.tactile_profile), spec.style.overrides),
+        printer=cfg.printer(spec.print.printer),
+        hf=hf,
+        settings=cfg.describe.model_copy(),
+        points=_print_points(spec, hf, model_dir),
+        paths={
+            "Folder": str(model_dir),
+            "STL file": str(result["export"].path),
+            "Spec file": str(spec_path),
+            "Attribution file": str(model_dir / "ATTRIBUTION.txt"),
+        },
+        source_resolution_m=_source_resolution_m(spec, result),
+    )
+    return describe(m, sections)

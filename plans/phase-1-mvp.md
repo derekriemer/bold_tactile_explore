@@ -20,7 +20,7 @@ Phase 1 is the roadmap section of the same name in [`terrain-print-handoff.md`](
 - [x] M3 Data providers and `resolve_area`
 - [x] M4 Line features and the full build
 - [x] M5 Analyzers
-- [ ] M6 `describe_model`
+- [x] M6 `describe_model`
 - [ ] M7 MCP server and editing
 - [ ] M8 `check_print`, print pack and `doctor`
 - [ ] M9 Sampler plate

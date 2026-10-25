@@ -55,6 +55,25 @@ def _generic_220() -> PrinterProfile:
     )
 
 
+class DescribeSettings(BaseModel):
+    """How describe_model reads a model out. Every number describe.py uses lives here."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    summit_radius_mm: float = 10.0  # a summit is the highest point within this radius
+    describe_min_run_mm: float = 10.0  # shorter direction runs are absorbed into a neighbour
+    summit_count: int = 5
+    summit_grid_mm: float = 1.0  # cell size used to search for summits
+    peak_name_radius_mm: float = 3.0  # a named peak this close to a summit names it
+    run_end_name_radius_mm: float = 5.0  # named points this close to a run end are mentioned
+    edge_tolerance_mm: float = 0.5  # how close to the border counts as the edge
+    section_fractions_y: list[float] = [0.25, 0.5, 0.75]  # east-west sections, as fractions of y
+    section_fractions_x: list[float] = [0.5]  # north-south sections, as fractions of x
+    section_step_mm: float = 10.0
+    extra_section_step_mm: float = 5.0
+    wrap_chars: int = 100  # lines are wrapped to this width
+
+
 class UserConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -63,6 +82,7 @@ class UserConfig(BaseModel):
     active_profile: str = "standard"
     default_printer: str = "louisville-library"
     overpass_endpoint: str = "https://overpass-api.de/api/interpreter"
+    describe: DescribeSettings = DescribeSettings()
     printers: dict[str, PrinterProfile] = {
         "louisville-library": _louisville_library(),
         "generic-220": _generic_220(),
