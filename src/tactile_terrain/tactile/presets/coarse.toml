@@ -1,0 +1,29 @@
+name = "coarse"
+description = "Reduced sensitivity: wider, taller lines and wider gaps (about 1.4 times standard)."
+min_line_width_mm = 1.7
+min_line_height_mm = 0.85
+min_parallel_spacing_mm = 4.2
+min_feature_length_mm = 5.6
+min_relief_mm = 11.2
+target_relief_mm = 16.8
+simplify_mm = 0.3
+distinguishable_profiles = ["rounded", "flat_top"]
+label_mode = "numerals"
+label_height_mm = 11.2
+label_stroke_mm = 2.1
+label_relief_mm = 1.4
+notch_width_mm = 4.2
+notch_depth_mm = 2.8
+
+[lines]
+rounded_major = { profile = "rounded", width_mm = 2.25, height_mm = 1.4 }
+rounded_minor = { profile = "rounded", width_mm = 1.7, height_mm = 1.0 }
+flat_top = { profile = "flat_top", width_mm = 2.8, height_mm = 2.1 }
+pointed = { profile = "pointed", width_mm = 1.7, height_mm = 1.7 }
+
+[sampler]
+sample_length_mm = 25.0
+pair_gap_mm = 8.4
+widths_mm = [1.4, 1.7, 2.25, 2.8, 3.5]
+heights_mm = [0.7, 1.0, 1.4, 2.1]
+spacings_mm = [8.4, 6.3, 4.2, 2.8, 2.1]
