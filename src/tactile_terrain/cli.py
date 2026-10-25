@@ -27,6 +27,11 @@ def main(argv: list[str] | None = None) -> int:
 
         print(api.build_spec(load_spec(args.spec), overwrite=args.overwrite))
         return 0
+    if args.command == "mcp":
+        from tactile_terrain.server import run
+
+        run()
+        return 0
     print(f"{args.command}: not implemented yet")
     return 0
 

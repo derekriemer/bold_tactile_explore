@@ -7,6 +7,8 @@ from tactile_terrain.registry import analyzers
 
 
 class Resolution:
+    """Source elevation cell size against the print grid."""
+
     name = "resolution"
 
     def analyze(self, ctx: AnalysisContext) -> AnalyzerResult:

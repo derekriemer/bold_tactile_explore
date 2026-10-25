@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import math
-from typing import Any
+from typing import Any, ClassVar
 
 import shapely
 from shapely.geometry import mapping, shape
@@ -57,6 +57,12 @@ def _to_features(gdf, dataset: str) -> list[LineFeature]:
 
 
 class Nhd:
+    """Rivers and streams from the National Hydrography Dataset Plus."""
+
+    filters: ClassVar[dict[str, str]] = {
+        "river": "min_stream_order (whole number), include_names (names always kept)",
+        "creek": "min_stream_order (whole number), include_names (names always kept)",
+    }
     source = SourceInfo(
         name="USGS National Hydrography Dataset Plus (NHDPlus)",
         licence="Public domain",

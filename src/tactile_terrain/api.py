@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import json
 import math
+import shutil
 import time
 from collections import defaultdict
 
@@ -13,6 +15,7 @@ from tactile_terrain import providers  # noqa: F401  (registers the built-in pro
 from tactile_terrain.analyzers import AnalysisContext, format_analysis, run_all
 from tactile_terrain.attribution import write_attribution
 from tactile_terrain.config import load_config
+from tactile_terrain.editing import apply_changes, backup_numbers, diff_lines
 from tactile_terrain.geo import projected_bounds, utm_crs_for
 from tactile_terrain.pipeline.stages import run_pipeline
 from tactile_terrain.providers import nominatim
@@ -178,7 +181,7 @@ def _summary(spec: Spec, result: dict, seconds: float, model_dir) -> str:
     return "\n".join(lines)
 
 
-def build_spec(spec: Spec, overwrite: bool = False) -> str:
+def build_spec(spec: Spec, overwrite: bool = False, on_progress=None) -> str:
     """Write the spec, run the pipeline, write the STL and attribution. Returns a summary."""
     cfg = load_config()
     validate_registry_names(spec, cfg)
@@ -191,7 +194,7 @@ def build_spec(spec: Spec, overwrite: bool = False) -> str:
     model_dir.mkdir(parents=True, exist_ok=True)
     save_spec(spec, model_dir / "spec.json")
     start = time.perf_counter()
-    result = run_pipeline(spec, model_dir, cfg.printer(spec.print.printer))
+    result = run_pipeline(spec, model_dir, cfg.printer(spec.print.printer), on_stage=on_progress)
     write_attribution(spec, model_dir / "ATTRIBUTION.txt")
     summary = _summary(spec, result, time.perf_counter() - start, model_dir)
     return "\n\n".join([summary, "Analysis:", _analysis_text(spec, result, cfg)])
@@ -206,6 +209,7 @@ def create_model(
     style: dict | None = None,
     elevation: dict | None = None,
     overwrite: bool = False,
+    on_progress=None,
 ) -> str:
     """Create a model from plain arguments. `area` is {"bbox": [...]} or just the bbox list."""
     cfg = load_config()
@@ -220,7 +224,7 @@ def create_model(
             "style": style or {"tactile_profile": cfg.active_profile},
         }
     )
-    return build_spec(spec, overwrite=overwrite)
+    return build_spec(spec, overwrite=overwrite, on_progress=on_progress)
 
 
 def _source_resolution_m(spec: Spec, result: dict) -> float | None:
@@ -304,3 +308,78 @@ def describe_model(name: str, sections: list[dict] | None = None) -> str:
         source_resolution_m=_source_resolution_m(spec, result),
     )
     return describe(m, sections)
+
+
+# --- editing and discovery -------------------------------------------------------------------
+
+
+def _model_dir(name: str):
+    cfg = load_config()
+    model_dir = cfg.models_path / name
+    if not (model_dir / "spec.json").exists():
+        known = ", ".join(_model_names(cfg)) or "none yet"
+        raise FileNotFoundError(f"No model named {name} in {cfg.models_path}. Models: {known}.")
+    return model_dir
+
+
+def _model_names(cfg) -> list[str]:
+    root = cfg.models_path
+    if not root.is_dir():
+        return []
+    return sorted(p.name for p in root.iterdir() if (p / "spec.json").exists())
+
+
+def update_model(name: str, changes: dict, on_progress=None) -> str:
+    """Apply a merge-patch and shortcuts to a model's spec, rebuild, and report before -> after.
+
+    Shortcuts: z_multiply, crop_percent, drop_feature, revert_to. The previous spec is kept
+    as spec.<n>.json. An invalid change leaves the spec untouched.
+    """
+    model_dir = _model_dir(name)
+    spec_path = model_dir / "spec.json"
+    current = json.loads(spec_path.read_text(encoding="utf-8"))
+    new = apply_changes(current, changes, model_dir)
+    try:
+        spec = Spec.model_validate(new)
+        validate_registry_names(spec)
+    except (ValueError, KeyError) as error:
+        raise ValueError(f"Change rejected, the spec is unchanged. {error}") from error
+    if spec.name != name:
+        raise ValueError("A model cannot be renamed; create a new model instead.")
+    changed = diff_lines(current, json.loads(spec.model_dump_json()))
+    if not changed:
+        return f"No change: model {name} already has those settings."
+    number = max(backup_numbers(model_dir), default=0) + 1
+    backup = model_dir / f"spec.{number}.json"
+    shutil.copy2(spec_path, backup)
+    summary = build_spec(spec, overwrite=True, on_progress=on_progress)
+    lines = ["Changes:", *[f"  {c}" for c in changed], f"Previous spec kept as {backup.name}."]
+    return "\n".join(lines) + "\n\n" + summary
+
+
+def list_models() -> str:
+    cfg = load_config()
+    names = _model_names(cfg)
+    if not names:
+        return f"No models yet in {cfg.models_path}."
+    lines = [f"Models in {cfg.models_path}:"]
+    for model in names:
+        spec = load_spec(cfg.models_path / model / "spec.json")
+        versions = len(backup_numbers(cfg.models_path / model))
+        scale = spec.print.scale_m_per_mm
+        size = f"1 mm = {scale:g} m" if scale else f"{spec.print.long_side_mm:g} mm long side"
+        lines.append(
+            f"  {model}: {spec.mode}, {size}, {len(spec.features)} feature types, "
+            f"{versions} earlier versions."
+        )
+    return "\n".join(lines)
+
+
+def get_spec(name: str) -> str:
+    return (_model_dir(name) / "spec.json").read_text(encoding="utf-8")
+
+
+def list_capabilities() -> str:
+    from tactile_terrain.capabilities import list_capabilities as capabilities
+
+    return capabilities(load_config())

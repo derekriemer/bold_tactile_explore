@@ -17,6 +17,8 @@ from tactile_terrain.registry import analyzers
 
 
 class Relief:
+    """Printed relief against the minimum needed to feel it, and the printer height."""
+
     name = "relief"
 
     def analyze(self, ctx: AnalysisContext) -> AnalyzerResult:

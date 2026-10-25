@@ -15,6 +15,8 @@ from tactile_terrain.registry import analyzers
 
 
 class BedFit:
+    """Footprint and height against the usable printer bed."""
+
     name = "bed_fit"
 
     def analyze(self, ctx: AnalysisContext) -> AnalyzerResult:

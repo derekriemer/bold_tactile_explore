@@ -21,7 +21,7 @@ Phase 1 is the roadmap section of the same name in [`terrain-print-handoff.md`](
 - [x] M4 Line features and the full build
 - [x] M5 Analyzers
 - [x] M6 `describe_model`
-- [ ] M7 MCP server and editing
+- [x] M7 MCP server and editing
 - [ ] M8 `check_print`, print pack and `doctor`
 - [ ] M9 Sampler plate
 - [ ] M10 Plugin and skill
@@ -346,7 +346,7 @@ tests/  (synthetic.py, helpers.py, fixtures/, test_*.py)
   - returns a before → after list
 - `api.list_capabilities()` (every registry with names, parameters and one-line descriptions, plus the active profile, the presets and the printers), `api.list_models()` and `api.get_spec(name)`.
 - `server.py`:
-  - a FastMCP stdio server with tools wrapping the api functions
+  - a MCPServer (mcp 2.x, formerly FastMCP) stdio server with tools wrapping the api functions
   - `instructions` text from the spec
   - progress notifications during builds
   - logging to stderr

@@ -235,14 +235,18 @@ def run_pipeline(
     model_dir: Path,
     printer: PrinterProfile,
     stages: list[Stage] | None = None,
+    on_stage: Callable[[str, int, int], None] | None = None,
 ) -> dict[str, Any]:
     """Run every stage in order, reusing cached results. Returns {stage name: result}."""
     ctx = Context(Path(model_dir), printer)
     cache = StageCache(ctx.model_dir)
     results: dict[str, Any] = {}
     key, upstream = "", None
+    table = stages or STAGES
     with using_cache_dir(ctx.model_dir / "cache"):
-        for stage in stages or STAGES:
+        for position, stage in enumerate(table):
+            if on_stage:
+                on_stage(stage.name, position, len(table))
             key = stage_key(stage.name, stage.spec_slice(spec, ctx), key)
             hit, result = cache.load(stage.name, key)
             if not (hit and stage.valid(result)):

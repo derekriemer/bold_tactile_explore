@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, ClassVar
 
 from shapely.geometry import LineString
 
@@ -36,6 +36,12 @@ def _refs(tags: dict[str, str]) -> list[str]:
 
 
 class Osm:
+    """Roads, ski lifts and named peaks from OpenStreetMap."""
+
+    filters: ClassVar[dict[str, str]] = {
+        "road": "classes (motorway, trunk, primary, secondary, tertiary), include_refs (refs always kept, for example US 40)",
+        "lift": "aerialway (all, or a list of types), exclude (list of types to leave out)",
+    }
     source = SourceInfo(
         name="OpenStreetMap",
         licence="ODbL 1.0",

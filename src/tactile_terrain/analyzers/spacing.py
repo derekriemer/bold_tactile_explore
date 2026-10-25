@@ -16,6 +16,8 @@ def _label(line) -> str:
 
 
 class Spacing:
+    """Different lines running closer together than the profile allows."""
+
     name = "spacing"
 
     def analyze(self, ctx: AnalysisContext) -> AnalyzerResult:

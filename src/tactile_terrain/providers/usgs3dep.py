@@ -44,6 +44,9 @@ def available_resolutions(bbox: BBox) -> list[str]:
 
 
 class Usgs3dep:
+    """US elevation at 1 m, 10 m or 30 m."""
+
+    parameters = "resolution_m (10 by default)"
     source = SourceInfo(
         name="USGS 3D Elevation Program (3DEP)",
         licence="Public domain",

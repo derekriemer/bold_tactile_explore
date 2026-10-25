@@ -12,6 +12,8 @@ from tactile_terrain.registry import analyzers
 
 
 class MinWidth:
+    """Line styles in use against the minimum printable width and height."""
+
     name = "min_width"
 
     def analyze(self, ctx: AnalysisContext) -> AnalyzerResult:

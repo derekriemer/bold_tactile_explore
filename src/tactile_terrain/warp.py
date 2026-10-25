@@ -15,6 +15,8 @@ class Warp(Protocol):
 
 
 class IdentityWarp:
+    """No horizontal distortion."""
+
     def apply(self, grid: ElevationGrid) -> ElevationGrid:
         return grid
 

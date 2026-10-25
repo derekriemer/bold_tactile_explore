@@ -86,7 +86,7 @@ Because OpenStreetMap data is used, attribution is mandatory: write `ATTRIBUTION
 - `httpx`: Overpass and Nominatim requests
 - `pydantic` (v2): spec, profile and config models
 - `platformdirs`: config and data locations
-- `mcp` (FastMCP): the server
+- `mcp` (`MCPServer` in the 2.x SDK, formerly `FastMCP`): the server. Anticipated failures are raised as `ToolError` so their text reaches the model; other exceptions are reported only as "Error executing tool".
 
 Python 3.12 or newer, managed with `uv` (`pyproject.toml` plus `uv.lock`). Package `tactile_terrain`, distribution `tactile-terrain`, one console script `tactile-terrain` with subcommands `mcp`, `build` and `doctor`.
 
