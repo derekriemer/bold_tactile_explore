@@ -14,7 +14,7 @@ Phase 1 is the roadmap section of the same name in [`terrain-print-handoff.md`](
 
 ## Status
 
-- [ ] M0 Scaffold
+- [x] M0 Scaffold
 - [ ] M1 Spec, config and profiles
 - [ ] M2 Geometry core
 - [ ] M3 Data providers and `resolve_area`

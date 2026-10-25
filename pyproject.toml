@@ -1,0 +1,44 @@
+[project]
+name = "tactile-terrain"
+version = "0.1.0"
+description = "Tactile terrain printing tool: an MCP server that turns map areas into 3D-printable models."
+readme = "README.md"
+authors = [
+    { name = "Derek Riemer", email = "git@derekriemer.com" }
+]
+license = "AGPL-3.0-or-later"
+license-files = ["LICENSE"]
+requires-python = ">=3.12"
+dependencies = [
+    "rasterio",
+    "numpy",
+    "scipy",
+    "pyproj",
+    "shapely>=2",
+    "trimesh",
+    "manifold3d",
+    "py3dep",
+    "pynhd",
+    "httpx",
+    "pydantic>=2",
+    "platformdirs",
+    "mcp",
+]
+
+[project.scripts]
+tactile-terrain = "tactile_terrain.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.11.27,<0.12.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = ["pytest", "ruff"]
+
+[tool.pytest.ini_options]
+addopts = "-m 'not network'"
+markers = ["network: tests that hit the network (skipped by default)"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
