@@ -700,4 +700,4 @@ Each of these is an interface plus a name-keyed registry. Loading them through P
 - The friend's printer: model, bed size, nozzle, and slicer.
 - Network access from the MCP server when the Claude app launches it. Direct access from this machine to 3DEP, NHDPlus HR and Overpass was confirmed on 2026-10-23.
 - Whether NHDPlus HR or the simpler 3DHP/NHD service is easier to query for a bounding box. Try NHDPlus HR first, with medium-resolution NHDPlus V2 as the fallback.
-- License for the repository. MIT or Apache-2.0 is suggested for the code. The data licenses are separate and handled through the attribution file.
+- License for the repository: AGPL-3.0-or-later for the code (decided 2026-10-24), so anyone running a modified version as a hosted service must offer its source to users. The data licenses are separate and handled through the attribution file.

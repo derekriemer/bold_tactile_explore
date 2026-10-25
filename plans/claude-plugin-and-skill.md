@@ -23,7 +23,7 @@ skills/
   "version": "0.1.0",
   "description": "Turn elevation and map features into 3D-printable tactile terrain models, described fully in text.",
   "author": { "name": "Derek Riemer" },
-  "license": "Apache-2.0"
+  "license": "AGPL-3.0-or-later"
 }
 ```
 

@@ -83,7 +83,7 @@ tests/  (synthetic.py, helpers.py, fixtures/, test_*.py)
   - loading from entry-point groups `tactile_terrain.<kind>`
   - one registry each for elevation providers, line providers, area providers, line styles, textures, warps, analyzers, joints and exporters, all empty for now
 - `docs/design-invariants.md`, copied from the spec section. `CONTRIBUTING.md` points to it.
-- `LICENSE`. **Ask the user** whether it's Apache-2.0 or MIT, if they haven't said yet.
+- `LICENSE`: the full AGPL-3.0 text (decided; SPDX `AGPL-3.0-or-later`). Set `license` in `pyproject.toml` to match. Check that every dependency licence is compatible.
 - `README.md` stub.
 - `.gitignore` covering `.venv/`, `models/`, `__pycache__/`, `*.stl`, except `tests/fixtures/`.
 - pytest config with the `network` marker excluded by default.
