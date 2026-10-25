@@ -404,8 +404,9 @@ This keeps lines on the terrain surface with no booleans, and the mesh is watert
   - `spec.json`, plus `spec.<n>.json` for each earlier version, one per edit
   - `<name>.stl`
   - `ATTRIBUTION.txt`
+  - `DESCRIPTION.txt`: the default `describe_model` text, rewritten after every build, edit and `check_print`, so the model can be read without Claude running
   - `cache/`
-  - `print-pack/`: the STL, the attribution, `PRINT-NOTES.txt`, and `SUBMIT-NOTES.txt` when the printer profile has submission notes
+  - `print-pack/`: the STL, the attribution, `DESCRIPTION.txt`, `PRINT-NOTES.txt`, and `SUBMIT-NOTES.txt` when the printer profile has submission notes
 
 ### Spec schema v1
 

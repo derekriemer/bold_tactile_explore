@@ -33,6 +33,7 @@ def test_print_pack_has_every_file_with_the_right_contents(model, monkeypatch):
         "ATTRIBUTION.txt",
         "PRINT-NOTES.txt",
         "SUBMIT-NOTES.txt",
+        "DESCRIPTION.txt",
     }
     notes = (pack / "PRINT-NOTES.txt").read_text(encoding="utf-8")
     assert "mm by" in notes and "no supports" in notes and "solid mass" in notes
@@ -67,3 +68,11 @@ def test_stl_size_limit_thins_flat_areas_in_the_export(models_dir):
     stl = models_dir / "s" / "s.stl"
     assert stl.stat().st_size <= 2 * 1_000_000
     assert "flat areas thinned" in api.check_print("s")
+
+
+def test_every_model_folder_has_a_text_description(model):
+    text = (model / "DESCRIPTION.txt").read_text(encoding="utf-8")
+    assert text == api.describe_model("m")
+    assert "Orientation" in text and "Tactile legend" in text
+    api.check_print("m")
+    assert (model / "print-pack" / "DESCRIPTION.txt").read_text(encoding="utf-8") == text

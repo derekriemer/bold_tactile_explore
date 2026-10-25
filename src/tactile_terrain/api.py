@@ -197,6 +197,7 @@ def build_spec(spec: Spec, overwrite: bool = False, on_progress=None) -> str:
     start = time.perf_counter()
     result = run_pipeline(spec, model_dir, cfg.printer(spec.print.printer), on_stage=on_progress)
     write_attribution(spec, model_dir / "ATTRIBUTION.txt")
+    _save_description(spec.name, model_dir)
     summary = _summary(spec, result, time.perf_counter() - start, model_dir)
     return "\n\n".join([summary, "Analysis:", _analysis_text(spec, result, cfg)])
 
@@ -283,6 +284,11 @@ def _print_points(spec: Spec, hf, model_dir) -> list:
         if 0 <= x <= width and 0 <= y <= depth:
             placed.append(PrintPoint(p.name, p.kind, x, y, p.elevation_m))
     return placed
+
+
+def _save_description(name: str, model_dir) -> None:
+    """Keep DESCRIPTION.txt, the default text description, next to the model."""
+    (model_dir / "DESCRIPTION.txt").write_text(describe_model(name), encoding="utf-8")
 
 
 def describe_model(name: str, sections: list[dict] | None = None) -> str:
@@ -467,6 +473,7 @@ def check_print(name: str) -> str:
         f"exaggeration {t.z_exaggeration:g} times."
     )
     notes = printpack.print_notes(name, what, report, printer)
+    _save_description(name, model_dir)
     written = printpack.write_print_pack(
         model_dir,
         stl,
@@ -547,6 +554,7 @@ def create_sampler(
         "No map data is used. Generated with tactile-terrain.\n",
         encoding="utf-8",
     )
+    _save_description(name, model_dir)
     shortened = (
         f" Samples were shortened from {plate.requested_length_mm:g} mm to "
         f"{plate.sample_length_mm:g} mm to fit."
@@ -595,6 +603,7 @@ def _check_sampler(name: str, spec: Spec, model_dir, printer) -> str:
         "lines, each with a numeral, so a person can find which differences they can feel."
     )
     notes = printpack.print_notes(name, what, report, printer)
+    _save_description(name, model_dir)
     written = printpack.write_print_pack(
         model_dir, stl, model_dir / "ATTRIBUTION.txt", notes, printpack.submit_notes(printer)
     )

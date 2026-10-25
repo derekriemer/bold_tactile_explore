@@ -123,3 +123,9 @@ def test_crop_percent_rejects_bad_edges_and_amounts(tmp_path):
 def test_diff_lines_shows_added_and_removed_keys():
     lines = diff_lines({"a": {"b": 1}, "c": 2}, {"a": {"b": 2}, "d": 3})
     assert lines == ["a.b: 1 → 2", "c: 2 → (none)", "d: (none) → 3"]
+
+
+def test_description_file_follows_the_edit(model):
+    assert "exaggeration: 1.5 times" in (model / "DESCRIPTION.txt").read_text(encoding="utf-8")
+    api.update_model("m", {"z_multiply": 2})
+    assert "exaggeration: 3 times" in (model / "DESCRIPTION.txt").read_text(encoding="utf-8")
