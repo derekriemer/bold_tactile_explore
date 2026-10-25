@@ -20,6 +20,9 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8")  # arrows and accents survive Windows consoles
     args = build_parser().parse_args(argv)
     if args.command == "build":
         from tactile_terrain import api
@@ -31,6 +34,11 @@ def main(argv: list[str] | None = None) -> int:
         from tactile_terrain.server import run
 
         run()
+        return 0
+    if args.command == "doctor":
+        from tactile_terrain import api
+
+        print(api.doctor())
         return 0
     print(f"{args.command}: not implemented yet")
     return 0

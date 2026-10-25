@@ -22,7 +22,7 @@ Phase 1 is the roadmap section of the same name in [`terrain-print-handoff.md`](
 - [x] M5 Analyzers
 - [x] M6 `describe_model`
 - [x] M7 MCP server and editing
-- [ ] M8 `check_print`, print pack and `doctor`
+- [x] M8 `check_print`, print pack and `doctor`
 - [ ] M9 Sampler plate
 - [ ] M10 Plugin and skill
 - [ ] M11 Winter Park validation

@@ -157,6 +157,25 @@ async def analyze_model(name: str) -> str:
 
 
 @mcp.tool()
+async def check_print(name: str) -> str:
+    """Check a model is printable: watertight, volume and filament (an upper bound), print time
+    when a slicer is installed, and minimum feature and bed-fit problems. Also writes the
+    print pack (STL, attribution, print notes, submission notes) next to the model."""
+    from tactile_terrain import api
+
+    return await _quick(api.check_print, name)
+
+
+@mcp.tool()
+async def doctor() -> str:
+    """Report the installation: versions, config path, models folder, which data services
+    are reachable, and whether a slicer is available."""
+    from tactile_terrain import api
+
+    return await _quick(api.doctor)
+
+
+@mcp.tool()
 async def list_capabilities() -> str:
     """Every provider, filter, style, analyzer and printer this installation supports."""
     from tactile_terrain import api

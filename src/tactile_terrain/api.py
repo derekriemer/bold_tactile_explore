@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import math
 import shutil
+import subprocess
 import time
 from collections import defaultdict
 
@@ -236,15 +237,18 @@ def _source_resolution_m(spec: Spec, result: dict) -> float | None:
     return float(min(grid.dx, grid.dy))
 
 
-def _analysis_text(spec: Spec, result: dict, cfg) -> str:
-    ctx = AnalysisContext(
+def _analysis_context(spec: Spec, result: dict, cfg) -> AnalysisContext:
+    return AnalysisContext(
         spec=spec,
         profile=apply_overrides(load_profile(spec.style.tactile_profile), spec.style.overrides),
         printer=cfg.printer(spec.print.printer),
         hf=result["lines"],
         source_resolution_m=_source_resolution_m(spec, result),
     )
-    return format_analysis(run_all(ctx))
+
+
+def _analysis_text(spec: Spec, result: dict, cfg) -> str:
+    return format_analysis(run_all(_analysis_context(spec, result, cfg)))
 
 
 def analyze_model(name: str) -> str:
@@ -383,3 +387,69 @@ def list_capabilities() -> str:
     from tactile_terrain.capabilities import list_capabilities as capabilities
 
     return capabilities(load_config())
+
+
+def doctor() -> str:
+    """An environment report: versions, config, models folder, data services, slicer."""
+    from tactile_terrain.doctor import run_doctor
+
+    return run_doctor(load_config())
+
+
+def check_print(name: str) -> str:
+    """Check the model is printable, estimate filament and time, and write the print pack."""
+    import numpy as np
+    import trimesh
+
+    from tactile_terrain import printpack
+
+    cfg = load_config()
+    model_dir = _model_dir(name)
+    spec = load_spec(model_dir / "spec.json")
+    printer = cfg.printer(spec.print.printer)
+    result = run_pipeline(spec, model_dir, printer)
+    stl = result["export"].path
+    mesh = trimesh.load(stl, force="mesh", process=True)
+    report = printpack.mesh_report(mesh, printer)
+
+    hf = result["lines"]
+    gradient = np.hypot(*np.gradient(hf.z, hf.grid_mm))
+    steepest = float(np.degrees(np.arctan(gradient.max())))
+
+    ctx = _analysis_context(spec, result, cfg)
+    found = run_all(ctx)
+    printability = [s.message for key in ("min_width", "bed_fit") for s in found[key].suggestions]
+
+    slicer = printpack.find_slicer()
+    sliced, note = None, ""
+    if slicer and printer.slicer_config:
+        try:
+            sliced = printpack.run_slicer(slicer, printer.slicer_config, stl)
+        except (OSError, subprocess.SubprocessError) as error:
+            note = f"Slicing with {slicer} failed: {error}."
+    elif slicer:
+        note = f"Found {slicer}, but this printer has no slicer_config in the user config."
+
+    exported = result["export"]
+    if exported.decimated_tolerance_mm is None:
+        size_line = f"STL size {exported.size_mb:.1f} MB."
+    else:
+        size_line = (
+            f"STL size {exported.size_mb:.1f} MB, flat areas thinned (tolerance "
+            f"{exported.decimated_tolerance_mm:g} mm) to stay under {printer.max_stl_mb:g} MB."
+        )
+    text = printpack.check_text(
+        name, report, printer, slicer, sliced, note, printability, steepest, size_line
+    )
+
+    t = hf.transform
+    notes = printpack.print_notes(name, t.scale_m_per_mm, t.z_exaggeration, report, printer)
+    written = printpack.write_print_pack(
+        model_dir,
+        stl,
+        model_dir / "ATTRIBUTION.txt",
+        notes,
+        printpack.submit_notes(printer),
+    )
+    files = ", ".join(p.name for p in written)
+    return f"{text}\nPrint pack written to {model_dir / 'print-pack'}: {files}."

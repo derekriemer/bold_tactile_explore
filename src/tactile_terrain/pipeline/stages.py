@@ -21,7 +21,7 @@ import tactile_terrain.warp  # noqa: F401  (registers the identity warp)
 from tactile_terrain.compose import Dropped, PlacedLine, compose
 from tactile_terrain.config import PrinterProfile
 from tactile_terrain.geo import PrintTransform, lonlat_transformer, utm_crs_for
-from tactile_terrain.mesh import heightfield_to_mesh
+from tactile_terrain.mesh import mesh_within_size, stl_size_mb
 from tactile_terrain.pipeline.cache import StageCache, stage_key
 from tactile_terrain.providers.base import ElevationGrid
 from tactile_terrain.providers.cache import using_cache_dir
@@ -55,6 +55,8 @@ class ExportResult:
     n_vertices: int
     n_faces: int
     bounds_mm: list[list[float]]
+    decimated_tolerance_mm: float | None = None  # set when flat areas were thinned for size
+    size_mb: float = 0.0
 
 
 def _bbox(spec: Spec) -> tuple[float, float, float, float]:
@@ -189,9 +191,16 @@ def tile(spec: Spec, upstream: Any, ctx: Context) -> Any:
 
 
 def export(spec: Spec, hf: Heightfield, ctx: Context) -> ExportResult:
-    mesh = heightfield_to_mesh(hf.z, hf.grid_mm)
+    mesh, tolerance = mesh_within_size(hf.z, hf.grid_mm, ctx.printer.max_stl_mb)
     path = exporters.get("stl")(mesh, ctx.model_dir / f"{spec.name}.stl")
-    return ExportResult(path, len(mesh.vertices), len(mesh.faces), mesh.bounds.tolist())
+    return ExportResult(
+        path,
+        len(mesh.vertices),
+        len(mesh.faces),
+        mesh.bounds.tolist(),
+        tolerance,
+        stl_size_mb(mesh),
+    )
 
 
 # --- stage table --------------------------------------------------------------------------
@@ -226,7 +235,12 @@ STAGES: list[Stage] = [
     ),
     Stage("base", base, lambda s, c: s.print.base_mm),
     Stage("tile", tile, lambda s, c: s.tiles),
-    Stage("export", export, lambda s, c: s.name, valid=lambda r: Path(r.path).exists()),
+    Stage(
+        "export",
+        export,
+        lambda s, c: [s.name, c.printer.max_stl_mb],
+        valid=lambda r: Path(r.path).exists(),
+    ),
 ]
 
 
