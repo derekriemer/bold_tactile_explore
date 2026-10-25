@@ -1,6 +1,6 @@
 # Phase 1 build plan
 
-Phase 1 is the roadmap section of the same name in [`terrain-print-handoff.md`](../terrain-print-handoff.md) (the spec). This file only says **in what order** and **how we know each step is done**. *What* to build is in the spec, mostly under **Implementation design**. If a brief and the spec disagree, the spec wins; fix the brief.
+Phase 1 is the roadmap section of the same name in [`docs/design-spec.md`](../docs/design-spec.md) (the spec). This file only says **in what order** and **how we know each step is done**. *What* to build is in the spec, mostly under **Implementation design**. If a brief and the spec disagree, the spec wins; fix the brief.
 
 ## How to use this file
 

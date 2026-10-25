@@ -4,7 +4,13 @@ Tactile terrain printing: an MCP server and Claude plugin that turn map areas in
 
 Status: Phase 1 under construction. Licensed AGPL-3.0-or-later.
 
-Everything the tool reports is plain text, so it works with a screen reader. The design rules it keeps are in [docs/design-invariants.md](docs/design-invariants.md).
+Everything the tool reports is plain text, so it works with a screen reader.
+
+Design documents:
+
+- [Design spec](docs/design-spec.md): what the tool does and why; the source of truth when the code and a plan disagree.
+- [Design invariants](docs/design-invariants.md): the rules the tool must keep.
+- [Plans](plans/README.md): the build plans and milestones.
 
 ## What it does
 

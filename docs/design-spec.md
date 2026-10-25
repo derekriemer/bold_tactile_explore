@@ -699,7 +699,7 @@ Each of these is an interface plus a name-keyed registry. Loading them through P
 
 ## Open questions
 
-- The library's nozzle size and slicer, and whether the larger SideKick 747 can be used. The library's request limits are known: 152 × 152 × 158 mm, 8 hours, PLA, one colour, 5 prints a month. See `plans/printing-access.md`.
+- The library's nozzle size and slicer, and whether the larger SideKick 747 can be used. The library's request limits are known: 152 × 152 × 158 mm, 8 hours, PLA, one colour, 5 prints a month. See [plans/printing-access.md](../plans/printing-access.md).
 - The friend's printer: model, bed size, nozzle, and slicer.
 - Network access from the MCP server when the Claude app launches it. Direct access from this machine to 3DEP, NHDPlus HR and Overpass was confirmed on 2026-10-23.
 - Whether NHDPlus HR or the simpler 3DHP/NHD service is easier to query for a bounding box. Try NHDPlus HR first, with medium-resolution NHDPlus V2 as the fallback.

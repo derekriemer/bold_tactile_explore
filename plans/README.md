@@ -1,6 +1,6 @@
 # Plans
 
-Plans derived from [`terrain-print-handoff.md`](../terrain-print-handoff.md), the spec. The spec is the source of truth for *what* is built, and it's a living document: when a decision changes what the tool does, edit the spec instead of adding a note here. These files decide *how* and *in what order*.
+Plans derived from [`docs/design-spec.md`](../docs/design-spec.md), the spec. The spec is the source of truth for *what* is built, and it's a living document: when a decision changes what the tool does, edit the spec instead of adding a note here. These files decide *how* and *in what order*.
 
 | File | What it covers |
 |---|---|

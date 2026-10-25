@@ -1,6 +1,6 @@
 # bold_tactile_explore
 
-Tactile terrain printing tool: a Python MCP server plus a Claude plugin and skill. The intent is in `terrain-print-handoff.md` and the decisions are in `plans/` (start with `plans/README.md`). The design invariants in the handoff are non-negotiable.
+Tactile terrain printing tool: a Python MCP server plus a Claude plugin and skill. The intent is in `docs/design-spec.md` and the decisions are in `plans/` (start with `plans/README.md`). The design invariants in the handoff are non-negotiable.
 
 The user is blind and uses NVDA. Report results as plain structured text, and never ask them to look at anything.
 
