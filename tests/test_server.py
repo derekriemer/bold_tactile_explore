@@ -13,6 +13,9 @@ from conftest import FIXTURE_BBOX, FIXTURE_CACHE
 from tactile_terrain import api
 
 EXPECTED_TOOLS = {
+    "check_print",
+    "doctor",
+    "create_sampler",
     "resolve_area",
     "create_model",
     "update_model",

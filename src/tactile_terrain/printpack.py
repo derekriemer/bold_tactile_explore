@@ -159,16 +159,12 @@ def check_text(
     return "\n".join(lines)
 
 
-def print_notes(name: str, scale: float, exaggeration: float, report: MeshReport, printer) -> str:
+def print_notes(name: str, what: str, report: MeshReport, printer) -> str:
     return "\n".join(
         [
             f"Print notes for {name}",
             "",
-            (
-                f"What it is: a tactile relief map. Terrain is raised from a flat base and rivers, "
-                f"roads and lifts are raised lines. 1 mm = {scale:g} m horizontally, with vertical "
-                f"exaggeration {exaggeration:g} times."
-            ),
+            f"What it is: {what}",
             (
                 f"Size: {report.footprint_mm[0]:.1f} mm by {report.footprint_mm[1]:.1f} mm, "
                 f"{report.height_mm:.1f} mm tall."

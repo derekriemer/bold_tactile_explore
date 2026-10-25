@@ -573,17 +573,18 @@ On a sampler plate, sections 3–7 are replaced by a row-by-row readout of every
 
 ### Sampler plate layout
 
-- **Size:** 140 × 120 mm, clamped to the printer bed, with a 3 mm base recorded in the sampler's spec.
+- **Size:** at most 140 × 120 mm (the profile's `plate_width_mm` and `plate_height_mm`), clamped to the printer's usable bed, with a 3 mm base recorded in the sampler's spec. The plate is sized to its content. Sample lines run east-west. If the rows do not fit, samples shorten by `length_shrink` per step (down to `min_sample_length_mm`) and the readout says so; if that is not enough within the preferred size, the whole usable bed is tried, and after that the user is told to use `focus`. The sampler's `kind: "sampler"`, `focus`, `seed` and the actual `sample_length_mm` are stored in the spec, and the plate is rebuilt from them. A sampler is not edited with `update_model`; make a new one.
 - **Rows:** separated by smooth 8 mm gutters, and each sample is `sample_length_mm` long:
   1. **Profile pairs** at the road width and height, with `pair_gap_mm` between the two samples in each pair: rounded|flat_top, rounded|pointed, flat_top|pointed, plus controls rounded|rounded and flat_top|flat_top.
   2. **Widths:** rounded, at each of `widths_mm`, at a fixed height.
   3. **Heights:** rounded, at a fixed width, at each of `heights_mm`.
   4. **Parallel spacing:** pairs of lines at each of `spacings_mm`.
-- **Order:** pairs within a row are shuffled with a seed recorded in the spec, so position gives nothing away.
+- **Order:** the profile-pair row is shuffled with a seed recorded in the spec (cell order, and which line of a pair is upper), so position gives nothing away. Widths, heights and spacings keep their natural order. The readout reveals which pairs are controls, so the user should feel the plate first.
 - **IDs (invariant 3):**
   - The row number is a count of notches on the left edge, sized `notch_width_mm` × `notch_depth_mm`.
-  - The sample number is a raised stroke numeral below each sample, `label_height_mm` tall with a `label_stroke_mm` stroke. Digits 0–9 are defined as polylines in the package (seven-segment style), drawn with the `flat_top` profile at `label_relief_mm`. There's no font dependency.
-  - Braille is added only if `label_mode` asks for it.
+  - The sample number (one per cell, so a pair shares one numeral) is a raised stroke numeral below each cell, `label_height_mm` tall with a `label_stroke_mm` stroke. Digits 0–9 are defined as polylines in the package (seven-segment style), drawn with the `flat_top` profile at `label_relief_mm`. There's no font dependency.
+  - Braille is added only if `label_mode` asks for it. **Not implemented in 0.1.0:** a Braille `label_mode` is refused with a clear message, and numerals are always drawn.
+  - Notches are slots lowered into the plate edge (to `max(base − notch_depth, label_relief)`), spaced one and a half notch widths apart and centred on the row.
 - **Orientation:** one notch on the north edge.
 
 ### doctor

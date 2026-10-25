@@ -38,6 +38,13 @@ class SamplerSettings(BaseModel):
     widths_mm: list[float]
     heights_mm: list[float]
     spacings_mm: list[float]
+    plate_width_mm: float = 140.0  # target plate size, clamped to the printer bed
+    plate_height_mm: float = 120.0
+    margin_mm: float = 4.0
+    gutter_mm: float = 8.0  # smooth space between rows
+    cell_gap_mm: float = 6.0  # between neighbouring samples in a row
+    length_shrink: float = 0.8  # samples shrink by this factor until the plate fits
+    min_sample_length_mm: float = 10.0
 
 
 class TactileProfile(BaseModel):

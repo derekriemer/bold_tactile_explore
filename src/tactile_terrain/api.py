@@ -259,6 +259,7 @@ def analyze_model(name: str) -> str:
     if not spec_path.exists():
         raise FileNotFoundError(f"No model named {name} in {cfg.models_path}.")
     spec = load_spec(spec_path)
+    _refuse_sampler(spec, "analyze_model")
     result = run_pipeline(spec, model_dir, cfg.printer(spec.print.printer))
     return "\n".join([f"Analysis of model {name}:", _analysis_text(spec, result, cfg)])
 
@@ -294,6 +295,17 @@ def describe_model(name: str, sections: list[dict] | None = None) -> str:
     if not spec_path.exists():
         raise FileNotFoundError(f"No model named {name} in {cfg.models_path}.")
     spec = load_spec(spec_path)
+    if spec.kind == "sampler":
+        from tactile_terrain.describe import describe_sampler
+        from tactile_terrain.sampler import build_plate
+
+        plate = build_plate(spec, cfg.printer(spec.print.printer))
+        paths = {
+            "Folder": str(model_dir),
+            "STL file": str(model_dir / f"{name}.stl"),
+            "Spec file": str(spec_path),
+        }
+        return describe_sampler(plate, spec, paths, cfg.describe)
     result = run_pipeline(spec, model_dir, cfg.printer(spec.print.printer))
     hf = result["lines"]
     m = DescribeInput(
@@ -342,6 +354,7 @@ def update_model(name: str, changes: dict, on_progress=None) -> str:
     model_dir = _model_dir(name)
     spec_path = model_dir / "spec.json"
     current = json.loads(spec_path.read_text(encoding="utf-8"))
+    _refuse_sampler(current, "update_model")
     new = apply_changes(current, changes, model_dir)
     try:
         spec = Spec.model_validate(new)
@@ -372,6 +385,9 @@ def list_models() -> str:
         versions = len(backup_numbers(cfg.models_path / model))
         scale = spec.print.scale_m_per_mm
         size = f"1 mm = {scale:g} m" if scale else f"{spec.print.long_side_mm:g} mm long side"
+        if spec.kind == "sampler":
+            lines.append(f"  {model}: sampler plate, {spec.style.tactile_profile} profile.")
+            continue
         lines.append(
             f"  {model}: {spec.mode}, {size}, {len(spec.features)} feature types, "
             f"{versions} earlier versions."
@@ -407,6 +423,8 @@ def check_print(name: str) -> str:
     model_dir = _model_dir(name)
     spec = load_spec(model_dir / "spec.json")
     printer = cfg.printer(spec.print.printer)
+    if spec.kind == "sampler":
+        return _check_sampler(name, spec, model_dir, printer)
     result = run_pipeline(spec, model_dir, printer)
     stl = result["export"].path
     mesh = trimesh.load(stl, force="mesh", process=True)
@@ -443,13 +461,142 @@ def check_print(name: str) -> str:
     )
 
     t = hf.transform
-    notes = printpack.print_notes(name, t.scale_m_per_mm, t.z_exaggeration, report, printer)
+    what = (
+        f"a tactile relief map. Terrain is raised from a flat base and rivers, roads and lifts "
+        f"are raised lines. 1 mm = {t.scale_m_per_mm:g} m horizontally, with vertical "
+        f"exaggeration {t.z_exaggeration:g} times."
+    )
+    notes = printpack.print_notes(name, what, report, printer)
     written = printpack.write_print_pack(
         model_dir,
         stl,
         model_dir / "ATTRIBUTION.txt",
         notes,
         printpack.submit_notes(printer),
+    )
+    files = ", ".join(p.name for p in written)
+    return f"{text}\nPrint pack written to {model_dir / 'print-pack'}: {files}."
+
+
+# --- sampler plates ------------------------------------------------------------------------
+
+SAMPLER_SEED_LIMIT = 1_000_000
+
+
+def _refuse_sampler(spec_or_dict, action: str) -> None:
+    kind = spec_or_dict.get("kind") if isinstance(spec_or_dict, dict) else spec_or_dict.kind
+    if kind == "sampler":
+        raise ValueError(
+            f"A sampler plate cannot be used with {action}. Create a new plate with "
+            "create_sampler instead."
+        )
+
+
+def create_sampler(
+    profile: str | None = None,
+    focus: str | None = None,
+    seed: int | None = None,
+    name: str | None = None,
+    printer: str | None = None,
+    overwrite: bool = False,
+) -> str:
+    """Build a single-round calibration plate around a tactile profile's current values.
+
+    focus limits the plate to one row type: profiles, widths, heights or spacing.
+    """
+    import random
+
+    from tactile_terrain.export.stl import export_stl
+    from tactile_terrain.mesh import mesh_within_size
+    from tactile_terrain.sampler import build_plate
+
+    cfg = load_config()
+    profile_name = profile or cfg.active_profile
+    load_profile(profile_name)  # an unknown name lists the valid ones
+    printer_name = printer or cfg.default_printer
+    machine = cfg.printer(printer_name)
+    seed = seed if seed is not None else random.SystemRandom().randrange(1, SAMPLER_SEED_LIMIT)
+    name = name or "-".join(["sampler", profile_name, *([focus] if focus else [])])
+    spec = Spec.model_validate(
+        {
+            "name": name,
+            "mode": "flat",
+            "area": {"bbox": [0, 0, 0.001, 0.001]},  # unused: a plate has no map area
+            "print": {"printer": printer_name, "scale_m_per_mm": 1, "base_mm": 3.0},
+            "elevation": {"provider": "usgs3dep", "resolution_m": 10},
+            "style": {"tactile_profile": profile_name},
+            "kind": "sampler",
+            "sampler": {"focus": focus, "seed": seed},
+        }
+    )
+    plate = build_plate(spec, machine)
+    spec = spec.model_copy(
+        update={
+            "sampler": spec.sampler.model_copy(update={"sample_length_mm": plate.sample_length_mm})
+        }
+    )
+    model_dir = cfg.models_path / name
+    if (model_dir / "spec.json").exists() and not overwrite:
+        raise FileExistsError(f"Model {name} already exists in {model_dir}. Use overwrite.")
+    model_dir.mkdir(parents=True, exist_ok=True)
+    save_spec(spec, model_dir / "spec.json")
+    mesh, _ = mesh_within_size(plate.z, plate.grid_mm, machine.max_stl_mb)
+    stl = export_stl(mesh, model_dir / f"{name}.stl")
+    (model_dir / "ATTRIBUTION.txt").write_text(
+        f"Attribution for the sampler plate {name}\n\n"
+        "No map data is used. Generated with tactile-terrain.\n",
+        encoding="utf-8",
+    )
+    shortened = (
+        f" Samples were shortened from {plate.requested_length_mm:g} mm to "
+        f"{plate.sample_length_mm:g} mm to fit."
+        if plate.sample_length_mm < plate.requested_length_mm
+        else ""
+    )
+    return "\n".join(
+        [
+            f"Built sampler plate {name} with the {profile_name} tactile profile.",
+            f"Folder: {model_dir}",
+            f"STL: {stl} ({stl.stat().st_size / BYTES_PER_MB:.1f} MB).",
+            (
+                f"Plate: {plate.width_mm:.1f} mm by {plate.height_mm:.1f} mm, {plate.base_mm:g} mm "
+                f"base, {len(plate.rows)} rows, {len(plate.cells)} numbered samples.{shortened}"
+            ),
+            (
+                "Use describe_model for the row-by-row readout. Feel the plate first: the readout "
+                "reveals which pairs are identical."
+            ),
+        ]
+    )
+
+
+def _check_sampler(name: str, spec: Spec, model_dir, printer) -> str:
+    import numpy as np
+    import trimesh
+
+    from tactile_terrain import printpack
+    from tactile_terrain.sampler import build_plate
+
+    plate = build_plate(spec, printer)
+    stl = model_dir / f"{name}.stl"
+    report = printpack.mesh_report(trimesh.load(stl, force="mesh", process=True), printer)
+    steepest = float(np.degrees(np.arctan(np.hypot(*np.gradient(plate.z, plate.grid_mm)).max())))
+    usable_x = printer.bed_mm[0] - 2 * printer.bed_margin_mm
+    usable_y = printer.bed_mm[1] - 2 * printer.bed_margin_mm
+    printability = []
+    if plate.width_mm > usable_x or plate.height_mm > usable_y:
+        printability.append("The plate is larger than the usable bed.")
+    size_line = f"STL size {stl.stat().st_size / BYTES_PER_MB:.1f} MB."
+    text = printpack.check_text(
+        name, report, printer, None, None, "", printability, steepest, size_line
+    )
+    what = (
+        "a tactile calibration plate. It has rows of paired, widening and closely spaced raised "
+        "lines, each with a numeral, so a person can find which differences they can feel."
+    )
+    notes = printpack.print_notes(name, what, report, printer)
+    written = printpack.write_print_pack(
+        model_dir, stl, model_dir / "ATTRIBUTION.txt", notes, printpack.submit_notes(printer)
     )
     files = ", ".join(p.name for p in written)
     return f"{text}\nPrint pack written to {model_dir / 'print-pack'}: {files}."

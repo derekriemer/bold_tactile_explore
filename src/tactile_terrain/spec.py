@@ -74,6 +74,14 @@ class Style(_Strict):
     overrides: dict[str, Any] = {}
 
 
+class SamplerInfo(_Strict):
+    """How a sampler plate was laid out, so it can be rebuilt and read out exactly."""
+
+    focus: str | None = None  # one of profiles, widths, heights, spacing; None means all rows
+    seed: int
+    sample_length_mm: float | None = None  # the length actually used, after any shrinking
+
+
 class Spec(_Strict):
     schema_version: Literal[1] = SCHEMA_VERSION
     name: str
@@ -88,6 +96,23 @@ class Spec(_Strict):
     textures: list[Any] = []  # reserved, Phase 2
     tiles: Any = None  # reserved, Phase 2
     built_with: str = "0.1.0"
+    kind: Literal["model", "sampler"] = "model"  # omitted from the file for ordinary models
+    sampler: SamplerInfo | None = None  # present only when kind is sampler
+
+    @model_validator(mode="after")
+    def _sampler_matches_kind(self) -> Spec:
+        if (self.kind == "sampler") != (self.sampler is not None):
+            raise ValueError("kind sampler and the sampler section go together")
+        return self
+
+    @model_serializer(mode="wrap")
+    def _omit_default_kind(self, handler: Any) -> dict[str, Any]:
+        data = handler(self)
+        if data.get("kind") == "model":
+            data.pop("kind", None)
+        if data.get("sampler") is None:
+            data.pop("sampler", None)
+        return data
 
     @field_validator("name")
     @classmethod

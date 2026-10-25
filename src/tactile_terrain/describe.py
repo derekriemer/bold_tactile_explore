@@ -12,6 +12,7 @@ import math
 import re
 import textwrap
 from dataclasses import dataclass, field
+from types import SimpleNamespace
 from typing import Any
 
 import numpy as np
@@ -517,3 +518,100 @@ def describe(m: DescribeInput, extra_sections: list[dict[str, Any]] | None = Non
         attribution(m),
     ]
     return "\n\n".join("\n".join(block) for block in blocks) + "\n"
+
+
+# --- sampler plates -----------------------------------------------------------------------
+
+ROW_TITLES = {
+    "profiles": "profile pairs: do the two lines of each pair feel the same or different",
+    "widths": "widths: rounded lines from narrow to wide",
+    "heights": "heights: rounded lines from low to tall",
+    "spacing": "spacing: pairs of lines with the gap between them getting smaller",
+}
+
+
+def _shape(name: str) -> str:
+    return name.replace("_", "-")
+
+
+def _line_words(line) -> str:
+    return f"{_shape(line.shape)}, {line.width_mm:g} mm wide, {line.height_mm:g} mm tall"
+
+
+def _cell_text(cell) -> str:
+    where = f"Row {cell.row}, sample {cell.number}: "
+    first = cell.lines[0]
+    if cell.kind == "profiles":
+        second = cell.lines[1]
+        lower = (
+            "the same again, so this pair is identical"
+            if second.shape == first.shape
+            else _line_words(second)
+        )
+        return f"{where}upper line {_line_words(first)}; lower line {lower}."
+    if cell.kind == "spacing":
+        return (
+            f"{where}two lines, each {_shape(first.shape)}, {first.width_mm:g} mm wide and "
+            f"{first.height_mm:g} mm tall, with a {cell.gap_mm:g} mm gap between their edges."
+        )
+    return f"{where}{_line_words(first)}."
+
+
+def describe_sampler(plate, spec, paths: dict[str, str], settings: DescribeSettings) -> str:
+    """Row-by-row readout of a sampler plate. It replaces the terrain sections."""
+    m = SimpleNamespace(settings=settings)
+    shortened = ""
+    if plate.sample_length_mm < plate.requested_length_mm:
+        shortened = (
+            f" Samples were shortened from {plate.requested_length_mm:g} mm to fit the plate."
+        )
+    summary = [
+        "Summary",
+        f"Sampler plate {spec.name}, made with the {spec.style.tactile_profile} tactile profile.",
+        (
+            f"Plate: {plate.width_mm:.1f} mm east-west by {plate.height_mm:.1f} mm north-south, "
+            f"{plate.base_mm:g} mm base. Printer: {spec.print.printer}."
+        ),
+        *_wrap(
+            m,
+            f"Every sample is a straight line {plate.sample_length_mm:g} mm long running "
+            f"east-west.{shortened} Shuffle seed {plate.seed}.",
+        ),
+    ]
+    summary += [f"{label}: {path}" for label, path in paths.items()]
+    notches = [
+        "Orientation",
+        "North is the far edge. The origin, x = 0 mm and y = 0 mm, is the south-west corner.",
+        *_wrap(
+            m,
+            "One notch in the middle of the north edge marks north. Notches on the left edge "
+            "give the row: one notch for row one, two for row two, and so on from north to south.",
+        ),
+        *_wrap(
+            m,
+            "Each sample has a raised numeral below it. Count the notches to find the row, "
+            "then read the numeral to find the sample. Braille is not needed.",
+        ),
+        *_wrap(
+            m,
+            "Feel the plate first and note which pairs feel the same and which feel different, "
+            "and where lines merge. This list reveals the answers, including which pairs are "
+            "identical controls.",
+        ),
+    ]
+    body = ["Rows"]
+    for row in plate.rows:
+        y0 = row.top_mm - row.height_mm
+        body += [
+            "",
+            *_wrap(
+                m,
+                f"Row {row.number}, {ROW_TITLES[row.kind]}. Between y = {y0:.0f} mm and "
+                f"y = {row.top_mm:.0f} mm.",
+            ),
+        ]
+        for cell in row.cells:
+            text = f"{_cell_text(cell)} Numeral {cell.number} at x = {cell.centre_x_mm:.0f} mm."
+            body += _wrap(m, text, "  ")
+    credit = ["Attribution", "No map data is used in a sampler plate."]
+    return "\n\n".join("\n".join(block) for block in (summary, notches, body, credit)) + "\n"

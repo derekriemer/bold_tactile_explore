@@ -157,6 +157,34 @@ async def analyze_model(name: str) -> str:
 
 
 @mcp.tool()
+async def create_sampler(
+    profile: str | None = None,
+    focus: str | None = None,
+    seed: int | None = None,
+    name: str | None = None,
+    printer: str | None = None,
+    overwrite: bool = False,
+) -> str:
+    """Build a calibration plate to find which differences the user can feel: profile pairs
+    with identical controls, widths, heights, and closely spaced lines. profile names the
+    tactile profile to test (default: the active one). focus limits the plate to one row type
+    (profiles, widths, heights or spacing). Every sample has a raised numeral and rows are
+    marked by notches on the left edge, so no Braille is needed. Use describe_model on the
+    result for a row-by-row readout."""
+    from tactile_terrain import api
+
+    return await _quick(
+        api.create_sampler,
+        profile=profile,
+        focus=focus,
+        seed=seed,
+        name=name,
+        printer=printer,
+        overwrite=overwrite,
+    )
+
+
+@mcp.tool()
 async def check_print(name: str) -> str:
     """Check a model is printable: watertight, volume and filament (an upper bound), print time
     when a slicer is installed, and minimum feature and bed-fit problems. Also writes the
