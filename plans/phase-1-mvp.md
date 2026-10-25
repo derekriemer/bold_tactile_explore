@@ -25,7 +25,7 @@ Phase 1 is the roadmap section of the same name in [`terrain-print-handoff.md`](
 - [x] M8 `check_print`, print pack and `doctor`
 - [x] M9 Sampler plate
 - [x] M10 Plugin and skill
-- [ ] M11 Winter Park validation
+- [~] M11 Winter Park validation (builds and checks done; user review and prints pending, see plans/winter-park-results.md)
 - [ ] M12 Release 0.1.0
 
 M10 can start any time after M7. M12 waits for M11.

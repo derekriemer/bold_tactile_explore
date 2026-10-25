@@ -212,3 +212,24 @@ def test_warnings_come_first_and_carry_a_fix():
     lines = text.splitlines()
     assert lines[0].startswith("WARN: ") and lines[1].startswith("  Fix: set print.z_exaggeration")
     assert text.index("WARN") < text.index("INFO")
+
+
+def test_a_floor_made_of_three_nozzles_is_not_flagged_for_float_error():
+    overrides = {"lines": {"rounded_major": {"width_mm": 1.2}}}
+    ctx = make_ctx(features=["rounded_major"], overrides=overrides, prn=printer(nozzle_mm=0.4))
+    assert MinWidth().analyze(ctx).suggestions == []  # 3 x 0.4 is 1.2000000000000002 in floats
+    ctx = make_ctx(
+        features=["rounded_major"],
+        overrides={"lines": {"rounded_major": {"width_mm": 1.0}}},
+        prn=printer(nozzle_mm=0.4),
+    )
+    assert MinWidth().analyze(ctx).suggestions[0].patch["style"]["overrides"]["lines"][
+        "rounded_major"
+    ] == {"width_mm": 1.2}
+
+
+def test_joined_pieces_of_one_feature_are_not_close_parallels():
+    style = resolve_style("flat_top", load_profile("standard"))
+    a = PlacedLine("Main Street", "road", style, LineString([(0, 20), (30, 20)]))
+    b = PlacedLine("", "road", style, LineString([(30, 20), (60, 20)]))
+    assert Spacing().analyze(make_ctx(lines=[a, b])).suggestions == []

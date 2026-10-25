@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 from tactile_terrain.analyzers.base import (
+    EPS,
     NOZZLE_WIDTH_FACTOR,
+    ROUND_DIGITS,
     AnalysisContext,
     AnalyzerResult,
     Suggestion,
@@ -17,7 +19,10 @@ class MinWidth:
     name = "min_width"
 
     def analyze(self, ctx: AnalysisContext) -> AnalyzerResult:
-        floor_w = max(ctx.profile.min_line_width_mm, NOZZLE_WIDTH_FACTOR * ctx.printer.nozzle_mm)
+        floor_w = round(
+            max(ctx.profile.min_line_width_mm, NOZZLE_WIDTH_FACTOR * ctx.printer.nozzle_mm),
+            ROUND_DIGITS,
+        )
         floor_h = ctx.profile.min_line_height_mm
         used = sorted({f.style for f in ctx.spec.features})
         out = AnalyzerResult()
@@ -27,10 +32,10 @@ class MinWidth:
             narrowest = entry.width_mm if narrowest is None else min(narrowest, entry.width_mm)
             changes: dict[str, float] = {}
             problems = []
-            if entry.width_mm < floor_w:
+            if entry.width_mm < floor_w - EPS:
                 changes["width_mm"] = floor_w
                 problems.append(f"{entry.width_mm:g} mm wide, below the {floor_w:g} mm minimum")
-            if entry.height_mm < floor_h:
+            if entry.height_mm < floor_h - EPS:
                 changes["height_mm"] = floor_h
                 problems.append(f"{entry.height_mm:g} mm tall, below the {floor_h:g} mm minimum")
             if not problems:

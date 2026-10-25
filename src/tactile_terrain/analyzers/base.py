@@ -19,6 +19,7 @@ SCALE_STEP = 5  # suggested scales are multiples of this many m per mm
 NOZZLE_WIDTH_FACTOR = 3  # printable lines are at least this many nozzle widths wide
 WORST_PLACES_REPORTED = 5
 EPS = 1e-9  # numerical tolerance for rounding up
+ROUND_DIGITS = 6  # suggested sizes are rounded to this many decimals
 
 Severity = Literal["info", "warn", "error"]
 

@@ -27,6 +27,8 @@ class Spacing:
         found = []
         for i, a in enumerate(lines):
             for b in lines[i + 1 :]:
+                if a.feature_type == b.feature_type and a.geometry.intersects(b.geometry):
+                    continue  # pieces of one feature joined end to end, not a close parallel
                 half_widths = a.style.width_mm / 2 + b.style.width_mm / 2
                 reach = half_widths + gap_min
                 if a.geometry.distance(b.geometry) >= reach:
