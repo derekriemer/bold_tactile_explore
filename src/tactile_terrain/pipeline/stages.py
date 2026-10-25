@@ -31,6 +31,8 @@ from tactile_terrain.styles import resolve_style
 from tactile_terrain.tactile.profile import apply_overrides, load_profile
 
 EPS = 1e-9  # numerical tolerance when counting grid cells
+WATER_TYPES = {"river", "creek"}  # features drawn from one hydrography source
+SHARED_REACH_MM = 0.01  # lines this close are the same reach, not two
 
 
 @dataclass
@@ -167,6 +169,7 @@ def _to_print_mm(geometry, hf: Heightfield):
 def lines(spec: Spec, hf: Heightfield, ctx: Context) -> Heightfield:
     profile = apply_overrides(load_profile(spec.style.tactile_profile), spec.style.overrides)
     placed: list[PlacedLine] = []
+    claimed: dict[tuple[str, str], list] = defaultdict(list)  # (provider, type) -> geometry taken
     for feature in spec.features:
         style = resolve_style(feature.style, profile)
         fetched = line_providers.get(feature.provider).fetch(
@@ -175,8 +178,20 @@ def lines(spec: Spec, hf: Heightfield, ctx: Context) -> Heightfield:
         by_name: dict[str, list] = defaultdict(list)
         for f in fetched:
             by_name[f.name].append(_to_print_mm(f.geometry, hf))
+        # Water features share one source, so a reach already placed by an earlier feature
+        # (for example a river inside the creek filter) is not placed again.
+        shares = feature.type in WATER_TYPES
+        taken = [g for (_, kind), gs in claimed.items() if kind in WATER_TYPES for g in gs]
+        taken_union = (
+            shapely.buffer(shapely.union_all(taken), SHARED_REACH_MM) if shares and taken else None
+        )
         for name, geometries in sorted(by_name.items()):
             merged = shapely.line_merge(shapely.union_all(geometries))
+            if taken_union is not None:
+                merged = shapely.line_merge(shapely.difference(merged, taken_union))
+            if merged.is_empty:
+                continue
+            claimed[(feature.provider, feature.type)].append(merged)
             placed.append(PlacedLine(name, feature.type, style, merged))
     result = compose(hf.z, hf.grid_mm, placed, profile)
     return replace(hf, terrain_z=hf.z, z=result.surface, lines=result.lines, dropped=result.dropped)

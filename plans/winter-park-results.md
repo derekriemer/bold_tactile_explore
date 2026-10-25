@@ -47,3 +47,11 @@ Each is classed as a data issue, a describe bug, an analyzer bug, a server bug o
 2. Run the plugin test steps in `plans/claude-plugin-and-skill.md` (the "Winter Park test run" section) with Claude Code, and record anything the skill did wrong as a skill fix.
 3. Decide problems 3 to 6 above.
 4. Print the sampler first, then the cirques crop, then the flat model, then the full model, and record the results here.
+
+## Crop and rescale iteration (2026-10-25)
+
+- Crop: the original model rectangle x 0..129.8 mm, y 0..120 mm (south part, 100 m/mm) converted through the UTM 13N transform to the lon/lat box -105.86134, 39.78899, -105.7084, 39.89812 (about 13.2 km by 12.2 km). The box is a little wider than the rectangle because UTM grid north is rotated from true north.
+- winter-park (generic-220, usable 210 by 210 mm): 63 m/mm, the smallest scale that fits. Footprint 209.2 by 194.0 mm, 35.2 mm tall. Was 100 m/mm.
+- winter-park-library (Louisville, usable 142 by 142 mm): 93 m/mm. Footprint 141.8 by 131.2 mm, 24.8 mm tall. It now fits; the earlier overflow is closed.
+- Water duplicates fixed in the lines stage: a river or creek reach already placed by an earlier water feature is not placed again, so "Fraser River (creek)" no longer repeats the river.
+- Still open: Fraser River and US 40 run together; `rounded_minor` and `pointed` stay 1.2 mm wide, below the Louisville 1.5 mm minimum.
