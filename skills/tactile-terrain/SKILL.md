@@ -17,8 +17,14 @@ units on every number; give positions as mm from the south-west corner, north is
 3. Confirm the build parameters back to the user in ONE line (area, scale, exaggeration, base,
    mode, feature filters, tactile profile) and wait for a yes or changes.
 4. `create_model`. Report the analysis it returns: warnings first, each with its proposed fix.
-5. Always `describe_model` and give the user its full text, lightly organised. Don't summarise
-   away line courses, crossings or cross-sections; they are the map.
+5. Always `describe_model` and give the user its text. It is Markdown: an "Overview" in plain
+   English first, then detailed sections under headings the user can skip between. Read the
+   overview first, then offer the detail. Don't drop line courses, crossings or cross-sections
+   from the detail; they are the map.
+   The overview is built by rules and can read stiffly. When the user wants it more natural,
+   rewrite the Overview (and the paragraph under any feature heading) in your own words, using
+   only facts in the detailed text. Keep every number and name exact, add nothing the text does
+   not say, and keep the headings so the sections stay skippable.
 6. `check_print` before calling the model done. Report the file paths.
 
 ## Editing

@@ -72,6 +72,13 @@ class DescribeSettings(BaseModel):
     section_step_mm: float = 10.0
     extra_section_step_mm: float = 5.0
     wrap_chars: int = 100  # lines are wrapped to this width
+    straight_ratio: float = (
+        1.1  # path length over straight distance: at most this is "nearly straight"
+    )
+    meander_ratio: float = 1.25  # at least this is "winding"
+    level_change_m: float = 20.0  # elevation changes smaller than this are "about level"
+    elevation_round_m: float = 10.0  # elevations in prose are rounded to this
+    overview_features: int = 6  # longest features told in the overview
 
 
 class UserConfig(BaseModel):

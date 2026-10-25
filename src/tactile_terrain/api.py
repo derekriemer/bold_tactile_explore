@@ -287,8 +287,8 @@ def _print_points(spec: Spec, hf, model_dir) -> list:
 
 
 def _save_description(name: str, model_dir) -> None:
-    """Keep DESCRIPTION.txt, the default text description, next to the model."""
-    (model_dir / "DESCRIPTION.txt").write_text(describe_model(name), encoding="utf-8")
+    """Keep DESCRIPTION.md, the default text description, next to the model."""
+    (model_dir / "DESCRIPTION.md").write_text(describe_model(name), encoding="utf-8")
 
 
 def describe_model(name: str, sections: list[dict] | None = None) -> str:

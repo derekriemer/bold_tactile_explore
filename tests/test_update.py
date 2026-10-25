@@ -126,6 +126,6 @@ def test_diff_lines_shows_added_and_removed_keys():
 
 
 def test_description_file_follows_the_edit(model):
-    assert "exaggeration: 1.5 times" in (model / "DESCRIPTION.txt").read_text(encoding="utf-8")
+    assert "exaggeration: 1.5 times" in (model / "DESCRIPTION.md").read_text(encoding="utf-8")
     api.update_model("m", {"z_multiply": 2})
-    assert "exaggeration: 3 times" in (model / "DESCRIPTION.txt").read_text(encoding="utf-8")
+    assert "exaggeration: 3 times" in (model / "DESCRIPTION.md").read_text(encoding="utf-8")

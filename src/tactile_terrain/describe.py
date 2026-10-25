@@ -16,6 +16,7 @@ from types import SimpleNamespace
 from typing import Any
 
 import numpy as np
+import shapely
 from scipy import ndimage
 from shapely.geometry import LineString, MultiLineString, Point
 
@@ -97,7 +98,7 @@ def _wrap(m: DescribeInput, text: str, indent: str = "", bullet: bool = False) -
     glued = GLUED.sub(lambda hit: hit.group(0).replace(" ", GLUE), text)
     first = indent + "- " if bullet else indent
     wrapped = textwrap.wrap(
-        glued, width=m.settings.wrap_chars, initial_indent=first, subsequent_indent=indent + "  "
+        glued, width=m.settings.wrap_chars, initial_indent=first, subsequent_indent=indent + ("  " if bullet else "")
     )
     return [line.replace(GLUE, " ") for line in wrapped] or [""]
 
@@ -352,6 +353,7 @@ def line_features(m: DescribeInput) -> list[str]:
             head = f"{_cap(_label(first))} ({kinds})"
         total = sum(_length(g) for g in group)
         lines += _sub(f"{head}, {total:.0f} mm long")
+        lines += [*_wrap(m, _story(m, group)), "", "Turn by turn:", ""]
         pieces = sorted(
             ((g, part) for g in group for part in _parts(g)), key=lambda gp: -gp[1].length
         )
@@ -378,6 +380,216 @@ def _entities(m: DescribeInput) -> list[list[PlacedLine]]:
         shared = line.name and line.feature_type in WATER_TYPES
         groups.setdefault(("water", line.name) if shared else n, []).append(line)
     return sorted(groups.values(), key=lambda g: -sum(_length(line) for line in g))
+
+
+# --- plain-English prose ------------------------------------------------------------------
+
+M_PER_KM = 1000  # unit conversion, not a tactile number
+REGION_GRID = [
+    ["south-west", "south", "south-east"],
+    ["west", "middle", "east"],
+    ["north-west", "north", "north-east"],
+]  # rows run south to north
+NUMBER_WORDS = [
+    "no", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
+    "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen",
+    "nineteen", "twenty",
+]  # fmt: skip
+OPPOSITE = {name: COMPASS[(n + len(COMPASS) // 2) % len(COMPASS)] for n, name in enumerate(COMPASS)}
+
+
+def _count(n: int) -> str:
+    return NUMBER_WORDS[n] if n < len(NUMBER_WORDS) else "many"
+
+
+def _join(items: list[str]) -> str:
+    if len(items) <= 1:
+        return "".join(items)
+    return ", ".join(items[:-1]) + " and " + items[-1]
+
+
+def _region(m: DescribeInput, x: float, y: float) -> str:
+    width, depth = m.extent
+    rows, cols = len(REGION_GRID), len(REGION_GRID[0])
+    row = min(max(int(y / depth * rows), 0), rows - 1)
+    col = min(max(int(x / width * cols), 0), cols - 1)
+    return REGION_GRID[row][col]
+
+
+def _place(m: DescribeInput, x: float, y: float) -> str:
+    region = _region(m, x, y)
+    return "the middle of the map" if region == "middle" else f"the {region} part of the map"
+
+
+def _round_elevation(m: DescribeInput, metres: float) -> float:
+    step = m.settings.elevation_round_m
+    return round(metres / step) * step
+
+
+def _ground(m: DescribeInput, mm: float) -> str:
+    metres = mm * m.hf.transform.scale_m_per_mm
+    if metres >= M_PER_KM:
+        return f"{metres / M_PER_KM:.1f} km"
+    return f"{_round_elevation(m, metres):.0f} m"
+
+
+def _kind_word(group: list[PlacedLine]) -> str:
+    kinds = {g.feature_type for g in group}
+    return "stream" if len(kinds) > 1 else group[0].feature_type
+
+
+def _end_text(m: DescribeInput, group: list[PlacedLine], end: tuple[float, float]) -> str:
+    x, y = end
+    edge = _edge_of(m, x, y)
+    if edge is not None:
+        return f"leaves the map at the {edge[0]} edge"
+    point = Point(x, y)
+    names = {g.name for g in group}
+    reach = m.settings.run_end_name_radius_mm
+    near = [
+        (line.geometry.distance(point), line.name)
+        for line in m.hf.lines
+        if line.name and line.name not in names and line.geometry.distance(point) <= reach
+    ]
+    if near:
+        return f"meets {min(near)[1]}"
+    return f"ends inside the map in {_place(m, x, y)}"
+
+
+def _story(m: DescribeInput, group: list[PlacedLine]) -> str:
+    """A short plain-English account of one named feature."""
+    s = m.settings
+    first = group[0]
+    kind = _kind_word(group)
+    merged = shapely.line_merge(shapely.union_all([g.geometry for g in group]))
+    parts = sorted(getattr(merged, "geoms", [merged]), key=lambda p: -p.length)
+    main = parts[0]
+    total = sum(_length(g) for g in group)
+    article = "an" if kind[:1] in "aeiou" else "a"
+    if first.name:
+        text = f"{_cap(first.name)} is {article} {kind} about {_ground(m, total)} long."
+    else:
+        text = f"There is an unnamed {kind} about {_ground(m, total)} long."
+    coords = _orient(m, first, main)
+    (x0, y0), (x1, y1) = coords[0], coords[-1]
+    chord = math.hypot(x1 - x0, y1 - y0)
+    e0, e1 = _elevation_at(m, x0, y0), _elevation_at(m, x1, y1)
+    change = _round_elevation(m, abs(e1 - e0))
+    if chord == 0:
+        text += " It loops back to where it started."
+    else:
+        heading = COMPASS[_bearing_index(x1 - x0, y1 - y0)]
+        ratio = main.length / chord
+        if first.feature_type == LIFT_TYPE:
+            text += f" It runs {heading}."
+        elif ratio <= s.straight_ratio:
+            text += f" It runs nearly straight {heading}."
+        else:
+            across = "east and west" if abs(y1 - y0) >= abs(x1 - x0) else "north and south"
+            how = "winds" if ratio >= s.meander_ratio else "wanders"
+            text += f" It generally runs {heading}, and {how} {across} along the way."
+        text += " " + _elevation_text(m, first, group, (x0, y0), (x1, y1), e0, e1, change)
+    if len(parts) > 1:
+        text += f" It also has {_count(len(parts) - 1)} shorter separate piece"
+        text += "s." if len(parts) > 2 else "."
+    return text
+
+
+def _elevation_text(m, first, group, start, end, e0, e1, change) -> str:
+    s = m.settings
+    heading = COMPASS[_bearing_index(end[0] - start[0], end[1] - start[1])]
+    if first.feature_type == LIFT_TYPE:
+        return (
+            f"It climbs about {change:.0f} m from the bottom terminal in {_place(m, *start)} "
+            f"to the top terminal in {_place(m, *end)}."
+        )
+    if abs(e1 - e0) < s.level_change_m:
+        return (
+            f"It stays at about the same elevation, within {s.level_change_m:.0f} m, "
+            f"and {_end_text(m, group, end)}."
+        )
+    if first.feature_type in WATER_TYPES:
+        downhill_end = end if e1 < e0 else start
+        flow = heading if e1 < e0 else OPPOSITE[heading]
+        return (
+            f"The water flows {flow}, losing about {change:.0f} m of elevation, until it "
+            f"{_end_text(m, group, downhill_end)}."
+        )
+    verb = "climbs" if e1 > e0 else "descends"
+    return f"Going {heading} it {verb} about {change:.0f} m, and then {_end_text(m, group, end)}."
+
+
+def _terrain_regions(m: DescribeInput) -> list[str]:
+    """Plain-English account of high and low ground by part of the map."""
+    rows, cols = len(REGION_GRID), len(REGION_GRID[0])
+    z = m.terrain
+    means = {}
+    for r, row_block in enumerate(np.array_split(z, rows, axis=0)):
+        for c, cell in enumerate(np.array_split(row_block, cols, axis=1)):
+            means[REGION_GRID[r][c]] = float(m.hf.transform.z_to_elevation(cell.mean()))
+    ordered = sorted(means, key=means.get)
+    high, low = ordered[-rows:], ordered[:rows]
+    lo, hi = (
+        float(m.hf.transform.z_to_elevation(z.min())),
+        float(m.hf.transform.z_to_elevation(z.max())),
+    )
+    j, i = np.unravel_index(np.argmin(z), z.shape)
+    lo_at = _region(m, i * m.hf.grid_mm, j * m.hf.grid_mm)
+    j, i = np.unravel_index(np.argmax(z), z.shape)
+    hi_at = _region(m, i * m.hf.grid_mm, j * m.hf.grid_mm)
+    lines = [
+        (
+            f"Ground elevation runs from about {_round_elevation(m, lo):.0f} m in the {lo_at} up to "
+            f"about {_round_elevation(m, hi):.0f} m in the {hi_at}, a difference of about "
+            f"{_round_elevation(m, hi - lo):.0f} m."
+        ),
+    ]
+    if hi - lo >= m.settings.level_change_m:
+        lines.append(f"The highest ground is in the {_join(high)}.")
+        lines.append(f"The lowest ground is in the {_join(low)}.")
+    else:
+        lines = ["The ground is nearly level."]
+    peaks: dict[str, list[str]] = {}
+    for x, y, height in _summits(m):
+        named = _near_points(m, x, y, {"peak"}, m.settings.peak_name_radius_mm)
+        if named:
+            elevation = _round_elevation(m, float(m.hf.transform.z_to_elevation(height)))
+            peaks.setdefault(_region(m, x, y), []).append(f"{named[0].name} ({elevation:.0f} m)")
+    if peaks:
+        told = [f"{_join(names)} in the {region}" for region, names in peaks.items()]
+        lines.append(f"Named peaks: {_join(told)}.")
+    return lines
+
+
+def overview(m: DescribeInput) -> list[str]:
+    """Plain-English opening: size, ground, regions and the main features."""
+    t = m.hf.transform
+    width, depth = m.extent
+    lines = [
+        "Overview",
+        (
+            "This overview is plain English. The detailed sections after it give exact positions "
+            "and each starts with a heading, so you can skip to the one you want."
+        ),
+        "",
+        (
+            f"This model covers about {_ground(m, width)} east-west by {_ground(m, depth)} "
+            f"north-south. North is the far edge. Heights are exaggerated {t.z_exaggeration:g} times."
+        ),
+    ]
+    if m.spec.mode != "flat":
+        lines += ["", *_wrap(m, " ".join(_terrain_regions(m)))]
+    entities = _entities(m)
+    if entities:
+        lines += ["", "The longest features:", ""]
+        for group in entities[: m.settings.overview_features]:
+            lines += _wrap(m, _story(m, group), bullet=True)
+        by_kind: dict[str, list[list[PlacedLine]]] = {}
+        for group in entities:
+            by_kind.setdefault(_kind_word(group), []).append(group)
+        counts = [f"{_count(len(v))} {k}{'s' if len(v) != 1 else ''}" for k, v in by_kind.items()]
+        lines += ["", *_wrap(m, f"In all, the map has {_join(counts)}.")]
+    return lines
 
 
 def _rank(m: DescribeInput, line: PlacedLine) -> tuple[float, int]:
@@ -552,6 +764,7 @@ def _markdown(title: str, blocks: list[list[str]]) -> str:
 
 def describe(m: DescribeInput, extra_sections: list[dict[str, Any]] | None = None) -> str:
     blocks = [
+        overview(m),
         summary(m),
         orientation(m),
         high_low_points(m),
@@ -628,13 +841,19 @@ def describe_sampler(plate, spec, paths: dict[str, str], settings: DescribeSetti
     summary += [f"- {label}: {path}" for label, path in paths.items()]
     notes = [
         "North is the far edge. The origin, x = 0 mm and y = 0 mm, is the south-west corner.",
-        "One notch in the middle of the north edge marks north. Notches on the left edge "
-        "give the row: one notch for row one, two for row two, and so on from north to south.",
-        "Each sample has a raised numeral below it. Count the notches to find the row, "
-        "then read the numeral to find the sample. Braille is not needed.",
-        "Feel the plate first and note which pairs feel the same and which feel different, "
-        "and where lines merge. This list reveals the answers, including which pairs are "
-        "identical controls.",
+        (
+            "One notch in the middle of the north edge marks north. Notches on the left edge "
+            "give the row: one notch for row one, two for row two, and so on from north to south."
+        ),
+        (
+            "Each sample has a raised numeral below it. Count the notches to find the row, "
+            "then read the numeral to find the sample. Braille is not needed."
+        ),
+        (
+            "Feel the plate first and note which pairs feel the same and which feel different, "
+            "and where lines merge. This list reveals the answers, including which pairs are "
+            "identical controls."
+        ),
     ]
     notches = ["Orientation", *_bullets(m, notes)]
     body = ["Rows"]

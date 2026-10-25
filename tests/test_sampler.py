@@ -154,7 +154,7 @@ def test_create_check_list_and_refuse_editing(models_dir):
     assert_printable(trimesh.load(models_dir / "plate" / "plate.stl"))
     spec_text = (models_dir / "plate" / "spec.json").read_text(encoding="utf-8")
     assert '"kind": "sampler"' in spec_text and '"seed": 2' in spec_text
-    assert "Row 1, sample 1:" in (models_dir / "plate" / "DESCRIPTION.txt").read_text(
+    assert "Row 1, sample 1:" in (models_dir / "plate" / "DESCRIPTION.md").read_text(
         encoding="utf-8"
     )
     assert "plate: sampler plate" in api.list_models()

@@ -198,7 +198,7 @@ def write_print_pack(
     shutil.copy2(stl, written[0])
     shutil.copy2(attribution, written[1])
     written[2].write_text(notes, encoding="utf-8")
-    description = model_dir / "DESCRIPTION.txt"
+    description = model_dir / "DESCRIPTION.md"
     if description.exists():
         written.append(pack / description.name)
         shutil.copy2(description, written[-1])
