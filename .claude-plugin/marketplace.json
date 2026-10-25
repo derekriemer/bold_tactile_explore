@@ -1,0 +1,12 @@
+{
+  "name": "tactile-terrain-local",
+  "description": "Tactile terrain models for 3D printing, described fully in text.",
+  "owner": { "name": "Derek Riemer" },
+  "plugins": [
+    {
+      "name": "tactile-terrain",
+      "source": "./",
+      "description": "Tactile terrain models for 3D printing."
+    }
+  ]
+}
