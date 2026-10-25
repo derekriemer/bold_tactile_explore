@@ -4,27 +4,31 @@ stage's output, and its result is cached."""
 
 from __future__ import annotations
 
+from collections import defaultdict
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any
 
 import numpy as np
+import shapely
 from rasterio.warp import Resampling, calculate_default_transform, reproject
 from scipy import ndimage
 
 import tactile_terrain.export.stl
 import tactile_terrain.providers
 import tactile_terrain.warp  # noqa: F401  (registers the identity warp)
+from tactile_terrain.compose import Dropped, PlacedLine, compose
 from tactile_terrain.config import PrinterProfile
-from tactile_terrain.geo import PrintTransform, utm_crs_for
+from tactile_terrain.geo import PrintTransform, lonlat_transformer, utm_crs_for
 from tactile_terrain.mesh import heightfield_to_mesh
 from tactile_terrain.pipeline.cache import StageCache, stage_key
 from tactile_terrain.providers.base import ElevationGrid
 from tactile_terrain.providers.cache import using_cache_dir
-from tactile_terrain.registry import elevation_providers, exporters
+from tactile_terrain.registry import elevation_providers, exporters, line_providers
 from tactile_terrain.spec import Spec
-from tactile_terrain.tactile.profile import load_profile
+from tactile_terrain.styles import resolve_style
+from tactile_terrain.tactile.profile import apply_overrides, load_profile
 
 EPS = 1e-9  # numerical tolerance when counting grid cells
 
@@ -40,6 +44,9 @@ class Heightfield:
     z: np.ndarray  # (ny, nx), mm; row 0 is y = 0 (south)
     grid_mm: float
     transform: PrintTransform
+    terrain_z: np.ndarray | None = None  # z before line features were added
+    lines: list[PlacedLine] = field(default_factory=list)  # kept lines, in print mm
+    dropped: list[Dropped] = field(default_factory=list)
 
 
 @dataclass
@@ -143,8 +150,34 @@ def texture(spec: Spec, upstream: Any, ctx: Context) -> Any:
     return upstream  # no textures until Phase 2
 
 
+def _to_print_mm(geometry, hf: Heightfield):
+    """Reproject a lon/lat geometry to UTM, then to print millimetres."""
+    t = lonlat_transformer(hf.transform.crs)
+
+    def convert(coords: np.ndarray) -> np.ndarray:
+        x, y = t.transform(coords[:, 0], coords[:, 1])
+        px, py = hf.transform.world_to_print(x, y)
+        return np.column_stack([px, py])
+
+    return shapely.transform(geometry, convert)
+
+
 def lines(spec: Spec, hf: Heightfield, ctx: Context) -> Heightfield:
-    return hf  # line features arrive in M4
+    profile = apply_overrides(load_profile(spec.style.tactile_profile), spec.style.overrides)
+    placed: list[PlacedLine] = []
+    for feature in spec.features:
+        style = resolve_style(feature.style, profile)
+        fetched = line_providers.get(feature.provider).fetch(
+            _bbox(spec), feature.type, feature.filter
+        )
+        by_name: dict[str, list] = defaultdict(list)
+        for f in fetched:
+            by_name[f.name].append(_to_print_mm(f.geometry, hf))
+        for name, geometries in sorted(by_name.items()):
+            merged = shapely.line_merge(shapely.union_all(geometries))
+            placed.append(PlacedLine(name, feature.type, style, merged))
+    result = compose(hf.z, hf.grid_mm, placed, profile)
+    return replace(hf, terrain_z=hf.z, z=result.surface, lines=result.lines, dropped=result.dropped)
 
 
 def base(spec: Spec, hf: Heightfield, ctx: Context) -> Heightfield:

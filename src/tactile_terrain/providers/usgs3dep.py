@@ -51,7 +51,7 @@ class Usgs3dep:
     )
 
     def fetch(self, bbox: BBox, resolution_m: float) -> ElevationGrid:
-        path = cache_path("usgs3dep", bbox, "tif", resolution_m=resolution_m)
+        path = cache_path("usgs3dep", bbox, "tif", resolution_m=float(resolution_m))
         if path.exists():
             return _read_tif(path)
         grid = self._download(bbox, resolution_m)

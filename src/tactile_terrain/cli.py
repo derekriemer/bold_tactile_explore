@@ -12,13 +12,21 @@ def build_parser() -> argparse.ArgumentParser:
     )
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("mcp", help="Run the MCP server.")
-    sub.add_parser("build", help="Build a model from a spec.")
+    build = sub.add_parser("build", help="Build a model from a spec.")
+    build.add_argument("spec", help="Path to a spec JSON file.")
+    build.add_argument("--overwrite", action="store_true", help="Rebuild an existing model.")
     sub.add_parser("doctor", help="Check the installation.")
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    if args.command == "build":
+        from tactile_terrain import api
+        from tactile_terrain.spec import load_spec
+
+        print(api.build_spec(load_spec(args.spec), overwrite=args.overwrite))
+        return 0
     print(f"{args.command}: not implemented yet")
     return 0
 

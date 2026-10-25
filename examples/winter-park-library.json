@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "name": "winter-park-library",
+  "mode": "terrain",
+  "area": {
+    "bbox": [
+      -105.86,
+      39.79,
+      -105.71,
+      39.96
+    ],
+    "crs": "auto"
+  },
+  "print": {
+    "printer": "louisville-library",
+    "scale_m_per_mm": 125,
+    "z_exaggeration": 1.5,
+    "base_mm": 3.0
+  },
+  "elevation": {
+    "provider": "usgs3dep",
+    "resolution_m": 10
+  },
+  "features": [
+    {
+      "type": "river",
+      "provider": "nhd",
+      "style": "rounded_major",
+      "filter": {
+        "min_stream_order": 4,
+        "include_names": [
+          "Fraser River"
+        ]
+      }
+    },
+    {
+      "type": "creek",
+      "provider": "nhd",
+      "style": "rounded_minor",
+      "filter": {
+        "min_stream_order": 3,
+        "include_names": [
+          "Second Creek",
+          "Vasquez Creek"
+        ]
+      }
+    },
+    {
+      "type": "road",
+      "provider": "osm",
+      "style": "flat_top",
+      "filter": {
+        "classes": [
+          "motorway",
+          "trunk",
+          "primary"
+        ],
+        "include_refs": [
+          "US 40"
+        ]
+      }
+    },
+    {
+      "type": "lift",
+      "provider": "osm",
+      "style": "pointed",
+      "filter": {
+        "aerialway": "all",
+        "exclude": [
+          "magic_carpet"
+        ]
+      }
+    }
+  ],
+  "style": {
+    "tactile_profile": "standard",
+    "overrides": {}
+  },
+  "legend": {},
+  "regions": [],
+  "textures": [],
+  "tiles": null,
+  "built_with": "0.1.0"
+}

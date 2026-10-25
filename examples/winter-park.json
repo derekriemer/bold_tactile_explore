@@ -12,8 +12,8 @@
     "crs": "auto"
   },
   "print": {
-    "printer": "louisville-library",
-    "scale_m_per_mm": 125,
+    "printer": "generic-220",
+    "scale_m_per_mm": 100,
     "z_exaggeration": 1.5,
     "base_mm": 3.0
   },

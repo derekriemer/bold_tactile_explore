@@ -104,3 +104,10 @@ def load_profile(name: str) -> TactileProfile:
     data = _resolve(name, ())
     data["name"] = name
     return TactileProfile.model_validate(data)
+
+
+def apply_overrides(profile: TactileProfile, overrides: dict) -> TactileProfile:
+    """Return the profile with the spec's explicit `style.overrides` merged in and re-validated."""
+    if not overrides:
+        return profile
+    return TactileProfile.model_validate(_merge(profile.model_dump(), overrides))

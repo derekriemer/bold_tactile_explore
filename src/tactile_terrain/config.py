@@ -41,6 +41,20 @@ def _louisville_library() -> PrinterProfile:
     )
 
 
+def _generic_220() -> PrinterProfile:
+    return PrinterProfile(
+        bed_mm=[220, 220, 250],
+        nozzle_mm=0.4,
+        grid_mm=0.2,
+        bed_margin_mm=5,
+        max_print_hours=0,
+        max_stl_mb=0,
+        filament_density_g_cm3=1.24,
+        slicer_config="",
+        submit_notes="",
+    )
+
+
 class UserConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -49,7 +63,10 @@ class UserConfig(BaseModel):
     active_profile: str = "standard"
     default_printer: str = "louisville-library"
     overpass_endpoint: str = "https://overpass-api.de/api/interpreter"
-    printers: dict[str, PrinterProfile] = {"louisville-library": _louisville_library()}
+    printers: dict[str, PrinterProfile] = {
+        "louisville-library": _louisville_library(),
+        "generic-220": _generic_220(),
+    }
 
     @property
     def models_path(self) -> Path:

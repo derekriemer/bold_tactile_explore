@@ -30,3 +30,19 @@ def offline_cache(tmp_path, monkeypatch):
     monkeypatch.setattr(nhd.Nhd, "_download", no_network)
     with using_cache_dir(cache):
         yield cache
+
+
+@pytest.fixture
+def models_dir(tmp_path):
+    """Point the user config's models_dir at a temporary folder."""
+    from tactile_terrain.config import config_path, load_config
+
+    load_config()
+    path = config_path()
+    folder = tmp_path / "models"
+    text = path.read_text(encoding="utf-8")
+    path.write_text(
+        text.replace('models_dir = "~/TactileModels"', f"models_dir = '{folder.as_posix()}'"),
+        encoding="utf-8",
+    )
+    return folder

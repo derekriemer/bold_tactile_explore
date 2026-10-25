@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, model_serializer, model_validator
+from pydantic import BaseModel, ConfigDict, field_validator, model_serializer, model_validator
 
 from tactile_terrain import config
 from tactile_terrain.tactile import profile as tactile_profile
@@ -88,12 +89,21 @@ class Spec(_Strict):
     tiles: Any = None  # reserved, Phase 2
     built_with: str = "0.1.0"
 
+    @field_validator("name")
+    @classmethod
+    def _safe_folder_name(cls, name: str) -> str:
+        if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]*", name):
+            raise ValueError(
+                "name may use only letters, digits, '-' and '_', and must start with a letter or digit"
+            )
+        return name
+
 
 def validate_registry_names(spec: Spec, cfg: config.UserConfig | None = None) -> None:
-    """Check names that are checkable now: tactile profile and printer.
+    """Check every registry-name field; errors list the valid names."""
+    from tactile_terrain import providers  # noqa: F401  (registers the built-in providers)
+    from tactile_terrain.registry import elevation_providers, line_providers
 
-    Providers and styles are checked once they are registered (M3, M4).
-    """
     cfg = cfg or config.load_config()
     valid_profiles = tactile_profile.profile_names()
     if spec.style.tactile_profile not in valid_profiles:
@@ -102,6 +112,18 @@ def validate_registry_names(spec: Spec, cfg: config.UserConfig | None = None) ->
             f"Valid names: {', '.join(valid_profiles)}"
         )
     cfg.printer(spec.print.printer)
+    if spec.mode == "terrain":
+        elevation_providers.get(spec.elevation.provider)
+    lines = tactile_profile.apply_overrides(
+        tactile_profile.load_profile(spec.style.tactile_profile), spec.style.overrides
+    ).lines
+    for feature in spec.features:
+        line_providers.get(feature.provider)
+        if feature.style not in lines:
+            raise ValueError(
+                f"Unknown line style '{feature.style}' for feature '{feature.type}'. "
+                f"Valid names: {', '.join(sorted(lines))}"
+            )
 
 
 def _migrate(data: dict[str, Any]) -> dict[str, Any]:
