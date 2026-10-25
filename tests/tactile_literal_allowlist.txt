@@ -1,3 +1,4 @@
 # One entry per line: <module path under src/tactile_terrain>:<regex matched against the source line>  # reason
 styles.py:FLAT_TOP_SHOULDER_DEG = 60  # printability geometry from the spec (60 degree shoulders), not a tactile threshold
 compose.py:CHUNK_VERTICES = 8  # performance tuning for chunked distance computation
+analyzers/base.py:^(PERCENTILE_LOW|PERCENTILE_HIGH|Z_STEP|SCALE_STEP|NOZZLE_WIDTH_FACTOR|WORST_PLACES_REPORTED|EPS) =  # definitions fixed by the spec and numerical tolerance, not tactile thresholds

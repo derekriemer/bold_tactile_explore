@@ -7,8 +7,10 @@ import time
 from collections import defaultdict
 
 import numpy as np
+from pyproj import CRS
 
 from tactile_terrain import providers  # noqa: F401  (registers the built-in providers)
+from tactile_terrain.analyzers import AnalysisContext, format_analysis, run_all
 from tactile_terrain.attribution import write_attribution
 from tactile_terrain.config import load_config
 from tactile_terrain.geo import projected_bounds, utm_crs_for
@@ -17,7 +19,8 @@ from tactile_terrain.providers import nominatim
 from tactile_terrain.providers.base import BBox
 from tactile_terrain.providers.usgs3dep import available_resolutions
 from tactile_terrain.registry import elevation_providers, line_providers
-from tactile_terrain.spec import Spec, save_spec, validate_registry_names
+from tactile_terrain.spec import Spec, load_spec, save_spec, validate_registry_names
+from tactile_terrain.tactile.profile import apply_overrides, load_profile
 
 COARSE_RESOLUTION_M = 90
 METRES_PER_KM = 1000
@@ -189,7 +192,8 @@ def build_spec(spec: Spec, overwrite: bool = False) -> str:
     start = time.perf_counter()
     result = run_pipeline(spec, model_dir, cfg.printer(spec.print.printer))
     write_attribution(spec, model_dir / "ATTRIBUTION.txt")
-    return _summary(spec, result, time.perf_counter() - start, model_dir)
+    summary = _summary(spec, result, time.perf_counter() - start, model_dir)
+    return "\n\n".join([summary, "Analysis:", _analysis_text(spec, result, cfg)])
 
 
 def create_model(
@@ -216,3 +220,35 @@ def create_model(
         }
     )
     return build_spec(spec, overwrite=overwrite)
+
+
+def _source_resolution_m(spec: Spec, result: dict) -> float | None:
+    grid = result["fetch"]
+    if grid is None:
+        return None
+    if CRS.from_user_input(grid.crs).is_geographic:  # cell size in degrees: use the requested size
+        return float(spec.elevation.resolution_m)
+    return float(min(grid.dx, grid.dy))
+
+
+def _analysis_text(spec: Spec, result: dict, cfg) -> str:
+    ctx = AnalysisContext(
+        spec=spec,
+        profile=apply_overrides(load_profile(spec.style.tactile_profile), spec.style.overrides),
+        printer=cfg.printer(spec.print.printer),
+        hf=result["lines"],
+        source_resolution_m=_source_resolution_m(spec, result),
+    )
+    return format_analysis(run_all(ctx))
+
+
+def analyze_model(name: str) -> str:
+    """Metrics and suggestions for a built model: warnings first, each with its fix."""
+    cfg = load_config()
+    model_dir = cfg.models_path / name
+    spec_path = model_dir / "spec.json"
+    if not spec_path.exists():
+        raise FileNotFoundError(f"No model named {name} in {cfg.models_path}.")
+    spec = load_spec(spec_path)
+    result = run_pipeline(spec, model_dir, cfg.printer(spec.print.printer))
+    return "\n".join([f"Analysis of model {name}:", _analysis_text(spec, result, cfg)])
