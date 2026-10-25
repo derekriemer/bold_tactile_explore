@@ -32,7 +32,7 @@ def line(name, type_, style, coords):
 
 def make_input(terrain=None, lines=(), points=(), types=("river", "road", "lift"), mode="terrain"):
     terrain = np.full((NY, NX), BASE) if terrain is None else terrain
-    styles = {"river": "rounded_major", "road": "flat_top", "lift": "pointed"}
+    styles = {"river": "rounded_major", "creek": "rounded_minor", "road": "flat_top", "lift": "pointed"}
     spec = Spec.model_validate(
         {
             "name": "synthetic",
@@ -180,7 +180,7 @@ def check_output_rules(text):
         assert len(raw) <= 200, raw
         assert raw.count("|") < 4, raw  # no tables wider than four columns
         assert not FORBIDDEN.search(raw), raw
-        if raw.startswith(PATH_LINES):
+        if raw.removeprefix("- ").startswith(PATH_LINES):
             continue
         for hit in NUMBER.finditer(raw):
             rest = raw[hit.end() :].lstrip()
@@ -234,3 +234,20 @@ def test_fixture_description_matches_snapshot(fixture_model):
 def test_describe_model_requires_an_existing_model(models_dir):
     with pytest.raises(FileNotFoundError, match="nope"):
         api.describe_model("nope")
+
+
+def test_one_named_stream_in_two_styles_is_one_entity():
+    lines = [
+        line("Parry Creek", "river", "rounded_major", [(10, 50), (50, 50)]),
+        line("Parry Creek", "creek", "rounded_minor", [(50, 50), (90, 50)]),
+    ]
+    text = describe.describe(make_input(lines=lines, types=("river", "creek")))
+    assert text.count("### Parry Creek") == 1
+    assert "river style rounded_major and creek style rounded_minor" in text
+    assert "Piece B, creek style rounded_minor:" in text
+
+
+def test_output_is_markdown_with_a_title_and_headings():
+    text = describe.describe(make_input())
+    assert text.startswith("# Tactile model description:")
+    assert "\n## Summary\n\n- Model:" in text

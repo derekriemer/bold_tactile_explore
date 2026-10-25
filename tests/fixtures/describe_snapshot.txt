@@ -1,172 +1,214 @@
-Summary
-Model: wp
-Footprint: 201.0 mm east-west by 201.2 mm north-south, 58.7 mm tall in total.
-Scale: 1 mm = 15 m horizontally. Vertical exaggeration: 1.5 times.
-Mode: terrain. Tactile profile: standard. Printer: louisville-library.
-Folder: <MODELS>/wp
-STL file: <MODELS>/wp/wp.stl
-Spec file: <MODELS>/wp/spec.json
-Attribution file: <MODELS>/wp/ATTRIBUTION.txt
+# Tactile model description: wp
 
-Orientation
-North is the far edge, where y is largest. East is the right edge, where x is largest.
-The origin, x = 0 mm and y = 0 mm, is the south-west corner nearest you.
+## Summary
 
-High and low points
-Highest points, highest first:
-  x = 30 mm, y = 22 mm: 57.8 mm high, elevation 3265 m
-  x = 26 mm, y = 6 mm: 57.6 mm high, elevation 3263 m
-  x = 2 mm, y = 0 mm: 54.9 mm high, elevation 3236 m
-  x = 201 mm, y = 201 mm: 38.5 mm high, elevation 3072 m
-  x = 154 mm, y = 170 mm: 32.6 mm high, elevation 3013 m
-Lowest point:
-  x = 22 mm, y = 201 mm: 3.0 mm high, elevation 2717 m
+- Model: wp
+- Footprint: 201.0 mm east-west by 201.2 mm north-south, 58.7 mm tall in total.
+- Scale: 1 mm = 15 m horizontally. Vertical exaggeration: 1.5 times.
+- Mode: terrain. Tactile profile: standard. Printer: louisville-library.
+- Folder: <MODELS>/wp
+- STL file: <MODELS>/wp/wp.stl
+- Spec file: <MODELS>/wp/spec.json
+- Attribution file: <MODELS>/wp/ATTRIBUTION.txt
 
-Line features
+## Orientation
 
-Fraser River (river, style rounded_major), 279 mm long.
-  Enters the south edge at x = 170 mm, then runs north for 20 mm, then north-west for 39 mm, then
-    west for 18 mm, then north-west for 26 mm, then north for 39 mm, then north-west for 92 mm, then
-    west for 16 mm, then north-west for 30 mm, then exits the north edge at x = 22 mm.
+- North is the far edge, where y is largest. East is the right edge, where x is largest.
+- The origin, x = 0 mm and y = 0 mm, is the south-west corner nearest you.
 
-Main Street (road, style flat_top), 270 mm long.
-  Enters the south edge at x = 165 mm, then runs north for 53 mm, then north-west for 57 mm, then
-    north for 44 mm, then north-west for 70 mm, then west for 47 mm, then exits the north edge at
-    x = 17 mm.
+## High and low points
 
-The Gondola (lift, style pointed), 109 mm long.
-  Bottom terminal at x = 97 mm, y = 96 mm, elevation 2771 m. Top terminal at x = 27 mm, y = 13 mm,
-    elevation 3259 m. Length 109 mm (1633 m on the ground), heading south-west.
+### Highest points, highest first
 
-Explorer Express (lift, style pointed), 91 mm long.
-  Bottom terminal at x = 24 mm, y = 112 mm, elevation 2885 m. Top terminal at x = 27 mm, y = 21 mm,
-    elevation 3263 m. Length 91 mm (1366 m on the ground), heading south.
+- x = 30 mm, y = 22 mm: 57.8 mm high, elevation 3265 m
+- x = 26 mm, y = 6 mm: 57.6 mm high, elevation 3263 m
+- x = 2 mm, y = 0 mm: 54.9 mm high, elevation 3236 m
+- x = 201 mm, y = 201 mm: 38.5 mm high, elevation 3072 m
+- x = 154 mm, y = 170 mm: 32.6 mm high, elevation 3013 m
 
-Jim Creek (river, style rounded_major), 77 mm long.
-  Starts at x = 138 mm, y = 50 mm, then runs north-east for 41 mm, then east for 35 mm, then exits
-    the east edge at y = 70 mm.
+### Lowest point
 
-Winter Park Drive (road, style flat_top), 53 mm long.
-  Starts at x = 52 mm, y = 167 mm, then runs north-west for 53 mm, then exits the north edge at
-    x = 15 mm.
+- x = 22 mm, y = 201 mm: 3.0 mm high, elevation 2717 m
 
-Arrow (lift, style pointed), 47 mm long.
-  Bottom terminal at x = 93 mm, y = 101 mm, elevation 2771 m. Top terminal at x = 55 mm, y = 75 mm,
-    elevation 2960 m. Length 47 mm (698 m on the ground), heading south-west.
+## Line features
 
-Gemini Express (lift, style pointed), 46 mm long.
-  Bottom terminal at x = 87 mm, y = 112 mm, elevation 2773 m. Top terminal at x = 48 mm, y = 88 mm,
-    elevation 2921 m. Length 46 mm (688 m on the ground), heading south-west.
+### Fraser River (river, style rounded_major), 279 mm long
 
-Endeavor (lift, style pointed), 35 mm long.
-  Bottom terminal at x = 61 mm, y = 121 mm, elevation 2864 m. Top terminal at x = 47 mm, y = 90 mm,
-    elevation 2920 m. Length 35 mm (518 m on the ground), heading south-west.
+- Enters the south edge at x = 170 mm, then runs north for 20 mm, then north-west for 39 mm, then
+  west for 18 mm, then north-west for 26 mm, then north for 39 mm, then north-west for 92 mm, then
+  west for 16 mm, then north-west for 30 mm, then exits the north edge at x = 22 mm.
 
-Prospector Express (lift, style pointed), 34 mm long.
-  Bottom terminal at x = 22 mm, y = 109 mm, elevation 2887 m. Top terminal at x = 0 mm, y = 83 mm,
-    elevation 2992 m. Length 34 mm (503 m on the ground), heading south-west.
+### Main Street (road, style flat_top), 270 mm long
 
-Village Cabriolet (lift, style pointed), 29 mm long.
-  Bottom terminal at x = 102 mm, y = 80 mm, elevation 2780 m. Top terminal at x = 129 mm, y = 70 mm,
-    elevation 2806 m. Length 29 mm (440 m on the ground), heading east.
+- Enters the south edge at x = 165 mm, then runs north for 53 mm, then north-west for 57 mm, then
+  north for 44 mm, then north-west for 70 mm, then west for 47 mm, then exits the north edge at
+  x = 17 mm.
 
-Iron Horse (lift, style pointed), 25 mm long.
-  Bottom terminal at x = 108 mm, y = 21 mm, elevation 2884 m. Top terminal at x = 95 mm, y = 0 mm,
-    elevation 2956 m. Length 25 mm (373 m on the ground), heading south-west.
+### The Gondola (lift, style pointed), 109 mm long
 
-Discovery (lift, style pointed), 21 mm long.
-  Bottom terminal at x = 31 mm, y = 112 mm, elevation 2879 m. Top terminal at x = 39 mm, y = 93 mm,
-    elevation 2913 m. Length 21 mm (310 m on the ground), heading south-east.
+- Bottom terminal at x = 97 mm, y = 96 mm, elevation 2771 m. Top terminal at x = 27 mm, y = 13 mm,
+  elevation 3259 m. Length 109 mm (1633 m on the ground), heading south-west.
 
-Super Gauge Express (lift, style pointed), 16 mm long.
-  Bottom terminal at x = 112 mm, y = 14 mm, elevation 2880 m. Top terminal at x = 104 mm, y = 0 mm,
-    elevation 2901 m. Length 16 mm (238 m on the ground), heading south-west.
+### Explorer Express (lift, style pointed), 91 mm long
 
-Pony Express (lift, style pointed), 13 mm long.
-  Bottom terminal at x = 108 mm, y = 11 mm, elevation 2883 m. Top terminal at x = 101 mm, y = 0 mm,
-    elevation 2920 m. Length 13 mm (199 m on the ground), heading south-west.
+- Bottom terminal at x = 24 mm, y = 112 mm, elevation 2885 m. Top terminal at x = 27 mm, y = 21 mm,
+  elevation 3263 m. Length 91 mm (1366 m on the ground), heading south.
 
-Spirit (lift, style pointed), 13 mm long.
-  Bottom terminal at x = 84 mm, y = 119 mm, elevation 2775 m. Top terminal at x = 76 mm, y = 130 mm,
-    elevation 2789 m. Length 13 mm (197 m on the ground), heading north-west.
+### Jim Creek (river, style rounded_major), 77 mm long
 
-Olympia Express (lift, style pointed), 12 mm long.
-  Bottom terminal at x = 0 mm, y = 10 mm, elevation 3205 m. Top terminal at x = 7 mm, y = 0 mm,
-    elevation 3234 m. Length 12 mm (179 m on the ground), heading south-east.
+- Starts at x = 138 mm, y = 50 mm, then runs north-east for 41 mm, then east for 35 mm, then exits
+  the east edge at y = 70 mm.
 
-Lariat (lift, style pointed), 10 mm long.
-  Bottom terminal at x = 23 mm, y = 1 mm, elevation 3248 m. Top terminal at x = 26 mm, y = 10 mm,
-    elevation 3261 m. Length 10 mm (145 m on the ground), heading north.
+### Winter Park Drive (road, style flat_top), 53 mm long
 
-Galloping Goose (lift, style pointed), 6 mm long.
-  Bottom terminal at x = 110 mm, y = 6 mm, elevation 2883 m. Top terminal at x = 111 mm, y = 0 mm,
-    elevation 2890 m. Length 6 mm (96 m on the ground), heading south.
+- Starts at x = 52 mm, y = 167 mm, then runs north-west for 53 mm, then exits the north edge at
+  x = 15 mm.
 
-Unnamed road (road, style flat_top), 5 mm long.
-  Starts at x = 107 mm, y = 137 mm, then runs north for 5 mm, then ends at x = 108 mm, y = 139 mm.
+### Arrow (lift, style pointed), 47 mm long
 
-Crossings and junctions
-  Fraser River crosses Main Street at x = 158 mm, y = 30 mm. Main Street is on top (1.5 mm tall
-    against 1 mm).
-  Fraser River meets Jim Creek at x = 138 mm, y = 50 mm. Fraser River is on top (1 mm tall against
-    1 mm).
-  Jim Creek crosses Main Street at x = 143 mm, y = 62 mm. Main Street is on top (1.5 mm tall against
-    1 mm).
-  Fraser River crosses Village Cabriolet at x = 107 mm, y = 78 mm. Village Cabriolet is on top
-    (1.2 mm tall against 1 mm).
-  Unnamed road crosses Main Street at x = 108 mm, y = 139 mm. Unnamed road is on top (1.5 mm tall
-    against 1.5 mm).
-  Fraser River crosses Main Street at x = 30 mm, y = 195 mm. Main Street is on top (1.5 mm tall
-    against 1 mm).
+- Bottom terminal at x = 93 mm, y = 101 mm, elevation 2771 m. Top terminal at x = 55 mm, y = 75 mm,
+  elevation 2960 m. Length 47 mm (698 m on the ground), heading south-west.
 
-Close parallels
-  Fraser River and Main Street run 0.0 mm apart (edge to edge) for 19.9 mm near x = 159 mm,
-    y = 29 mm; they need 3 mm to stay separate under the finger.
-  Fraser River and Main Street run 0.0 mm apart (edge to edge) for 19.7 mm near x = 30 mm,
-    y = 196 mm; they need 3 mm to stay separate under the finger.
-  Jim Creek and Main Street run 0.0 mm apart (edge to edge) for 10.0 mm near x = 143 mm, y = 62 mm;
-    they need 3 mm to stay separate under the finger.
-  Fraser River and Village Cabriolet run 0.0 mm apart (edge to edge) for 10.1 mm near x = 107 mm,
-    y = 79 mm; they need 3 mm to stay separate under the finger.
-  Main Street and Winter Park Drive run 0.3 mm apart (edge to edge) for 4.7 mm near x = 19 mm,
-    y = 200 mm; they need 3 mm to stay separate under the finger.
+### Gemini Express (lift, style pointed), 46 mm long
 
-Cross-sections
+- Bottom terminal at x = 87 mm, y = 112 mm, elevation 2773 m. Top terminal at x = 48 mm, y = 88 mm,
+  elevation 2921 m. Length 46 mm (688 m on the ground), heading south-west.
+
+### Endeavor (lift, style pointed), 35 mm long
+
+- Bottom terminal at x = 61 mm, y = 121 mm, elevation 2864 m. Top terminal at x = 47 mm, y = 90 mm,
+  elevation 2920 m. Length 35 mm (518 m on the ground), heading south-west.
+
+### Prospector Express (lift, style pointed), 34 mm long
+
+- Bottom terminal at x = 22 mm, y = 109 mm, elevation 2887 m. Top terminal at x = 0 mm, y = 83 mm,
+  elevation 2992 m. Length 34 mm (503 m on the ground), heading south-west.
+
+### Village Cabriolet (lift, style pointed), 29 mm long
+
+- Bottom terminal at x = 102 mm, y = 80 mm, elevation 2780 m. Top terminal at x = 129 mm, y = 70 mm,
+  elevation 2806 m. Length 29 mm (440 m on the ground), heading east.
+
+### Iron Horse (lift, style pointed), 25 mm long
+
+- Bottom terminal at x = 108 mm, y = 21 mm, elevation 2884 m. Top terminal at x = 95 mm, y = 0 mm,
+  elevation 2956 m. Length 25 mm (373 m on the ground), heading south-west.
+
+### Discovery (lift, style pointed), 21 mm long
+
+- Bottom terminal at x = 31 mm, y = 112 mm, elevation 2879 m. Top terminal at x = 39 mm, y = 93 mm,
+  elevation 2913 m. Length 21 mm (310 m on the ground), heading south-east.
+
+### Super Gauge Express (lift, style pointed), 16 mm long
+
+- Bottom terminal at x = 112 mm, y = 14 mm, elevation 2880 m. Top terminal at x = 104 mm, y = 0 mm,
+  elevation 2901 m. Length 16 mm (238 m on the ground), heading south-west.
+
+### Pony Express (lift, style pointed), 13 mm long
+
+- Bottom terminal at x = 108 mm, y = 11 mm, elevation 2883 m. Top terminal at x = 101 mm, y = 0 mm,
+  elevation 2920 m. Length 13 mm (199 m on the ground), heading south-west.
+
+### Spirit (lift, style pointed), 13 mm long
+
+- Bottom terminal at x = 84 mm, y = 119 mm, elevation 2775 m. Top terminal at x = 76 mm, y = 130 mm,
+  elevation 2789 m. Length 13 mm (197 m on the ground), heading north-west.
+
+### Olympia Express (lift, style pointed), 12 mm long
+
+- Bottom terminal at x = 0 mm, y = 10 mm, elevation 3205 m. Top terminal at x = 7 mm, y = 0 mm,
+  elevation 3234 m. Length 12 mm (179 m on the ground), heading south-east.
+
+### Lariat (lift, style pointed), 10 mm long
+
+- Bottom terminal at x = 23 mm, y = 1 mm, elevation 3248 m. Top terminal at x = 26 mm, y = 10 mm,
+  elevation 3261 m. Length 10 mm (145 m on the ground), heading north.
+
+### Galloping Goose (lift, style pointed), 6 mm long
+
+- Bottom terminal at x = 110 mm, y = 6 mm, elevation 2883 m. Top terminal at x = 111 mm, y = 0 mm,
+  elevation 2890 m. Length 6 mm (96 m on the ground), heading south.
+
+### Unnamed road (road, style flat_top), 5 mm long
+
+- Starts at x = 107 mm, y = 137 mm, then runs north for 5 mm, then ends at x = 108 mm, y = 139 mm.
+
+## Crossings and junctions
+
+- Fraser River crosses Main Street at x = 158 mm, y = 30 mm. Main Street is on top (1.5 mm tall
+  against 1 mm).
+- Fraser River meets Jim Creek at x = 138 mm, y = 50 mm. Fraser River is on top (1 mm tall against
+  1 mm).
+- Jim Creek crosses Main Street at x = 143 mm, y = 62 mm. Main Street is on top (1.5 mm tall against
+  1 mm).
+- Fraser River crosses Village Cabriolet at x = 107 mm, y = 78 mm. Village Cabriolet is on top
+  (1.2 mm tall against 1 mm).
+- Unnamed road crosses Main Street at x = 108 mm, y = 139 mm. Unnamed road is on top (1.5 mm tall
+  against 1.5 mm).
+- Fraser River crosses Main Street at x = 30 mm, y = 195 mm. Main Street is on top (1.5 mm tall
+  against 1 mm).
+
+## Close parallels
+
+- Fraser River and Main Street run 0.0 mm apart (edge to edge) for 19.9 mm near x = 159 mm,
+  y = 29 mm; they need 3 mm to stay separate under the finger.
+- Fraser River and Main Street run 0.0 mm apart (edge to edge) for 19.7 mm near x = 30 mm,
+  y = 196 mm; they need 3 mm to stay separate under the finger.
+- Jim Creek and Main Street run 0.0 mm apart (edge to edge) for 10.0 mm near x = 143 mm, y = 62 mm;
+  they need 3 mm to stay separate under the finger.
+- Fraser River and Village Cabriolet run 0.0 mm apart (edge to edge) for 10.1 mm near x = 107 mm,
+  y = 79 mm; they need 3 mm to stay separate under the finger.
+- Main Street and Winter Park Drive run 0.3 mm apart (edge to edge) for 4.7 mm near x = 19 mm,
+  y = 200 mm; they need 3 mm to stay separate under the finger.
+
+## Cross-sections
+
 Terrain height without raised lines, every 10 mm.
-East-west section at y = 50 mm (25% of the way north):
-  x = 0 mm: 37.7 mm; x = 10 mm: 37.8 mm; x = 20 mm: 39.2 mm; x = 30 mm: 40.1 mm; x = 40 mm: 41.2 mm;
-    x = 50 mm: 41.8 mm; x = 60 mm: 41.3 mm; x = 70 mm: 35.0 mm; x = 80 mm: 28.9 mm;
-    x = 90 mm: 23.1 mm; x = 100 mm: 16.7 mm; x = 110 mm: 11.8 mm; x = 120 mm: 11.4 mm;
-    x = 130 mm: 10.6 mm; x = 140 mm: 11.2 mm; x = 150 mm: 12.5 mm; x = 160 mm: 14.2 mm;
-    x = 170 mm: 17.2 mm; x = 180 mm: 21.3 mm; x = 190 mm: 24.2 mm; x = 200 mm: 24.3 mm
-East-west section at y = 101 mm (50% of the way north):
-  x = 0 mm: 26.4 mm; x = 10 mm: 22.3 mm; x = 20 mm: 20.9 mm; x = 30 mm: 20.7 mm; x = 40 mm: 21.3 mm;
-    x = 50 mm: 21.5 mm; x = 60 mm: 21.0 mm; x = 70 mm: 17.5 mm; x = 80 mm: 12.3 mm;
-    x = 90 mm: 8.9 mm; x = 100 mm: 8.4 mm; x = 110 mm: 9.2 mm; x = 120 mm: 12.5 mm;
-    x = 130 mm: 16.6 mm; x = 140 mm: 18.9 mm; x = 150 mm: 20.5 mm; x = 160 mm: 20.8 mm;
-    x = 170 mm: 21.3 mm; x = 180 mm: 22.2 mm; x = 190 mm: 24.6 mm; x = 200 mm: 26.8 mm
-East-west section at y = 151 mm (75% of the way north):
-  x = 0 mm: 20.6 mm; x = 10 mm: 20.0 mm; x = 20 mm: 20.2 mm; x = 30 mm: 20.5 mm; x = 40 mm: 17.1 mm;
-    x = 50 mm: 11.0 mm; x = 60 mm: 7.9 mm; x = 70 mm: 6.9 mm; x = 80 mm: 5.9 mm; x = 90 mm: 6.5 mm;
-    x = 100 mm: 8.2 mm; x = 110 mm: 10.8 mm; x = 120 mm: 12.9 mm; x = 130 mm: 15.1 mm;
-    x = 140 mm: 17.2 mm; x = 150 mm: 20.5 mm; x = 160 mm: 23.9 mm; x = 170 mm: 24.7 mm;
-    x = 180 mm: 24.0 mm; x = 190 mm: 26.2 mm; x = 200 mm: 24.4 mm
-North-south section at x = 100 mm (50% of the way east):
-  y = 0 mm: 23.9 mm; y = 10 mm: 21.3 mm; y = 20 mm: 21.0 mm; y = 30 mm: 19.9 mm; y = 40 mm: 18.8 mm;
-    y = 50 mm: 16.6 mm; y = 60 mm: 12.2 mm; y = 70 mm: 10.6 mm; y = 80 mm: 9.3 mm;
-    y = 90 mm: 8.6 mm; y = 100 mm: 8.3 mm; y = 110 mm: 8.4 mm; y = 120 mm: 8.3 mm;
-    y = 130 mm: 7.5 mm; y = 140 mm: 7.8 mm; y = 150 mm: 8.2 mm; y = 160 mm: 10.0 mm;
-    y = 170 mm: 9.8 mm; y = 180 mm: 13.3 mm; y = 190 mm: 16.4 mm; y = 200 mm: 19.1 mm
 
-Tactile legend
-  River: rounded ridge, 1.6 mm wide and 1 mm tall (style rounded_major, from nhd).
-  Road: flat-topped ridge, 2 mm wide and 1.5 mm tall (style flat_top, from osm).
-  Lift: pointed ridge, 1.2 mm wide and 1.2 mm tall (style pointed, from osm).
+### East-west section at y = 50 mm (25% of the way north)
 
-Distortion
-No horizontal distortion: 1 mm = 15 m in every direction.
-Vertical exaggeration is 1.5 times everywhere, so 1 mm of height stands for 10.0 m of real elevation.
+x = 0 mm: 37.7 mm; x = 10 mm: 37.8 mm; x = 20 mm: 39.2 mm; x = 30 mm: 40.1 mm; x = 40 mm: 41.2 mm;
+  x = 50 mm: 41.8 mm; x = 60 mm: 41.3 mm; x = 70 mm: 35.0 mm; x = 80 mm: 28.9 mm;
+  x = 90 mm: 23.1 mm; x = 100 mm: 16.7 mm; x = 110 mm: 11.8 mm; x = 120 mm: 11.4 mm;
+  x = 130 mm: 10.6 mm; x = 140 mm: 11.2 mm; x = 150 mm: 12.5 mm; x = 160 mm: 14.2 mm;
+  x = 170 mm: 17.2 mm; x = 180 mm: 21.3 mm; x = 190 mm: 24.2 mm; x = 200 mm: 24.3 mm
 
-Attribution
-Data from USGS 3D Elevation Program (3DEP), USGS National Hydrography Dataset Plus (NHDPlus),
+### East-west section at y = 101 mm (50% of the way north)
+
+x = 0 mm: 26.4 mm; x = 10 mm: 22.3 mm; x = 20 mm: 20.9 mm; x = 30 mm: 20.7 mm; x = 40 mm: 21.3 mm;
+  x = 50 mm: 21.5 mm; x = 60 mm: 21.0 mm; x = 70 mm: 17.5 mm; x = 80 mm: 12.3 mm; x = 90 mm: 8.9 mm;
+  x = 100 mm: 8.4 mm; x = 110 mm: 9.2 mm; x = 120 mm: 12.5 mm; x = 130 mm: 16.6 mm;
+  x = 140 mm: 18.9 mm; x = 150 mm: 20.5 mm; x = 160 mm: 20.8 mm; x = 170 mm: 21.3 mm;
+  x = 180 mm: 22.2 mm; x = 190 mm: 24.6 mm; x = 200 mm: 26.8 mm
+
+### East-west section at y = 151 mm (75% of the way north)
+
+x = 0 mm: 20.6 mm; x = 10 mm: 20.0 mm; x = 20 mm: 20.2 mm; x = 30 mm: 20.5 mm; x = 40 mm: 17.1 mm;
+  x = 50 mm: 11.0 mm; x = 60 mm: 7.9 mm; x = 70 mm: 6.9 mm; x = 80 mm: 5.9 mm; x = 90 mm: 6.5 mm;
+  x = 100 mm: 8.2 mm; x = 110 mm: 10.8 mm; x = 120 mm: 12.9 mm; x = 130 mm: 15.1 mm;
+  x = 140 mm: 17.2 mm; x = 150 mm: 20.5 mm; x = 160 mm: 23.9 mm; x = 170 mm: 24.7 mm;
+  x = 180 mm: 24.0 mm; x = 190 mm: 26.2 mm; x = 200 mm: 24.4 mm
+
+### North-south section at x = 100 mm (50% of the way east)
+
+y = 0 mm: 23.9 mm; y = 10 mm: 21.3 mm; y = 20 mm: 21.0 mm; y = 30 mm: 19.9 mm; y = 40 mm: 18.8 mm;
+  y = 50 mm: 16.6 mm; y = 60 mm: 12.2 mm; y = 70 mm: 10.6 mm; y = 80 mm: 9.3 mm; y = 90 mm: 8.6 mm;
+  y = 100 mm: 8.3 mm; y = 110 mm: 8.4 mm; y = 120 mm: 8.3 mm; y = 130 mm: 7.5 mm;
+  y = 140 mm: 7.8 mm; y = 150 mm: 8.2 mm; y = 160 mm: 10.0 mm; y = 170 mm: 9.8 mm;
+  y = 180 mm: 13.3 mm; y = 190 mm: 16.4 mm; y = 200 mm: 19.1 mm
+
+## Tactile legend
+
+- River: rounded ridge, 1.6 mm wide and 1 mm tall (style rounded_major, from nhd).
+- Road: flat-topped ridge, 2 mm wide and 1.5 mm tall (style flat_top, from osm).
+- Lift: pointed ridge, 1.2 mm wide and 1.2 mm tall (style pointed, from osm).
+
+## Distortion
+
+- No horizontal distortion: 1 mm = 15 m in every direction.
+- Vertical exaggeration is 1.5 times everywhere, so 1 mm of height stands for 10.0 m of real elevation.
+
+## Attribution
+
+- Data from USGS 3D Elevation Program (3DEP), USGS National Hydrography Dataset Plus (NHDPlus),
   OpenStreetMap. Full credits are in ATTRIBUTION.txt.

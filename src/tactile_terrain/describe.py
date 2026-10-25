@@ -23,7 +23,7 @@ from tactile_terrain.analyzers.base import AnalysisContext
 from tactile_terrain.analyzers.spacing import Spacing
 from tactile_terrain.compose import PlacedLine
 from tactile_terrain.config import DescribeSettings, PrinterProfile
-from tactile_terrain.pipeline.stages import Heightfield
+from tactile_terrain.pipeline.stages import WATER_TYPES, Heightfield
 from tactile_terrain.providers.names import name_matches
 from tactile_terrain.spec import Spec
 from tactile_terrain.tactile.profile import TactileProfile
@@ -89,13 +89,26 @@ def _cap(text: str) -> str:
     return text[:1].upper() + text[1:]
 
 
-def _wrap(m: DescribeInput, text: str, indent: str = "") -> list[str]:
-    """Wrap to the describe width without splitting a coordinate or a measurement."""
+def _wrap(m: DescribeInput, text: str, indent: str = "", bullet: bool = False) -> list[str]:
+    """Wrap to the describe width without splitting a coordinate or a measurement.
+
+    A bullet is a Markdown list item: "- " on the first line, continuation lines aligned under it.
+    """
     glued = GLUED.sub(lambda hit: hit.group(0).replace(" ", GLUE), text)
+    first = indent + "- " if bullet else indent
     wrapped = textwrap.wrap(
-        glued, width=m.settings.wrap_chars, initial_indent=indent, subsequent_indent=indent + "  "
+        glued, width=m.settings.wrap_chars, initial_indent=first, subsequent_indent=indent + "  "
     )
     return [line.replace(GLUE, " ") for line in wrapped] or [""]
+
+
+def _bullets(m: DescribeInput, texts: list[str], indent: str = "") -> list[str]:
+    return [line for text in texts for line in _wrap(m, text, indent, bullet=True)]
+
+
+def _sub(title: str) -> list[str]:
+    """A third-level heading with blank lines around it."""
+    return ["", f"### {title}", ""]
 
 
 def _label(line: PlacedLine) -> str:
@@ -157,30 +170,30 @@ def summary(m: DescribeInput) -> list[str]:
     top = float(m.hf.z.max())
     lines = [
         "Summary",
-        f"Model: {m.spec.name}",
+        f"- Model: {m.spec.name}",
         (
-            f"Footprint: {width:.1f} mm east-west by {depth:.1f} mm north-south, "
+            f"- Footprint: {width:.1f} mm east-west by {depth:.1f} mm north-south, "
             f"{top:.1f} mm tall in total."
         ),
         (
-            f"Scale: 1 mm = {t.scale_m_per_mm:g} m horizontally. "
+            f"- Scale: 1 mm = {t.scale_m_per_mm:g} m horizontally. "
             f"Vertical exaggeration: {t.z_exaggeration:g} times."
         ),
         (
-            f"Mode: {m.spec.mode}. Tactile profile: {m.spec.style.tactile_profile}. "
+            f"- Mode: {m.spec.mode}. Tactile profile: {m.spec.style.tactile_profile}. "
             f"Printer: {m.spec.print.printer}."
         ),
     ]
     for label, path in m.paths.items():
-        lines.append(f"{label}: {path}")
+        lines.append(f"- {label}: {path}")
     return lines
 
 
 def orientation(m: DescribeInput) -> list[str]:
     return [
         "Orientation",
-        "North is the far edge, where y is largest. East is the right edge, where x is largest.",
-        "The origin, x = 0 mm and y = 0 mm, is the south-west corner nearest you.",
+        "- North is the far edge, where y is largest. East is the right edge, where x is largest.",
+        "- The origin, x = 0 mm and y = 0 mm, is the south-west corner nearest you.",
     ]
 
 
@@ -224,15 +237,16 @@ def _point_text(m: DescribeInput, x: float, y: float, height: float, name: str |
 
 def high_low_points(m: DescribeInput) -> list[str]:
     if m.spec.mode == "flat":
-        return ["High and low points", "Flat model: there is no terrain, only the base."]
-    lines = ["High and low points", "Highest points, highest first:"]
+        return ["High and low points", "- Flat model: there is no terrain, only the base."]
+    lines = ["High and low points", *_sub("Highest points, highest first")]
     for x, y, height in _summits(m):
         named = _near_points(m, x, y, {"peak"}, m.settings.peak_name_radius_mm)
-        lines += _wrap(m, _point_text(m, x, y, height, named[0].name if named else None), "  ")
+        text = _point_text(m, x, y, height, named[0].name if named else None)
+        lines += _wrap(m, text, bullet=True)
     z, g = m.terrain, m.hf.grid_mm
     j, i = np.unravel_index(np.argmin(z), z.shape)
-    lines.append("Lowest point:")
-    lines += _wrap(m, _point_text(m, i * g, j * g, float(z[j, i]), None), "  ")
+    lines += _sub("Lowest point")
+    lines += _wrap(m, _point_text(m, i * g, j * g, float(z[j, i]), None), bullet=True)
     return lines
 
 
@@ -327,20 +341,43 @@ def line_features(m: DescribeInput) -> list[str]:
     lines = ["Line features"]
     if not m.hf.lines:
         return [*lines, "There are no line features."]
-    for line in sorted(m.hf.lines, key=_length, reverse=True):
-        head = f"{_cap(_label(line))} ({line.feature_type}, style {line.style.name}), "
-        head += f"{_length(line):.0f} mm long."
-        lines += ["", *_wrap(m, head)]
-        parts = sorted(_parts(line), key=lambda p: -p.length)
-        for n, part in enumerate(parts):
-            prefix = "" if len(parts) == 1 else f"Piece {chr(ord('A') + n)}: "
+    for group in _entities(m):
+        first = group[0]
+        if len(group) == 1:
+            head = f"{_cap(_label(first))} ({first.feature_type}, style {first.style.name})"
+        else:
+            kinds = " and ".join(
+                dict.fromkeys(f"{g.feature_type} style {g.style.name}" for g in group)
+            )
+            head = f"{_cap(_label(first))} ({kinds})"
+        total = sum(_length(g) for g in group)
+        lines += _sub(f"{head}, {total:.0f} mm long")
+        pieces = sorted(
+            ((g, part) for g in group for part in _parts(g)), key=lambda gp: -gp[1].length
+        )
+        for n, (line, part) in enumerate(pieces):
+            prefix = ""
+            if len(pieces) > 1:
+                prefix = f"Piece {chr(ord('A') + n)}"
+                if len(group) > 1:
+                    prefix += f", {line.feature_type} style {line.style.name}"
+                prefix += ": "
             walk = (
                 _lift_text(m, line, part)
                 if line.feature_type == LIFT_TYPE
                 else _walk_text(m, line, part)
             )
-            lines += _wrap(m, prefix + _cap(walk), "  ")
+            lines += _wrap(m, prefix + _cap(walk), bullet=True)
     return lines
+
+
+def _entities(m: DescribeInput) -> list[list[PlacedLine]]:
+    """Lines grouped by what they are: one named stream drawn in two styles is one entity."""
+    groups: dict[object, list[PlacedLine]] = {}
+    for n, line in enumerate(m.hf.lines):
+        shared = line.name and line.feature_type in WATER_TYPES
+        groups.setdefault(("water", line.name) if shared else n, []).append(line)
+    return sorted(groups.values(), key=lambda g: -sum(_length(line) for line in g))
 
 
 def _rank(m: DescribeInput, line: PlacedLine) -> tuple[float, int]:
@@ -365,14 +402,14 @@ def crossings(m: DescribeInput) -> list[str]:
                 top, other = (a, b) if _rank(m, a) >= _rank(m, b) else (b, a)
                 found.append((point.x, point.y, a, b, verb, top, other))
     if not found:
-        return [*lines, "No line features cross or meet."]
+        return [*lines, "- No line features cross or meet."]
     for x, y, a, b, verb, top, other in sorted(found, key=lambda f: (f[1], f[0])):
         text = (
             f"{_cap(_label(a))} {verb} {_label(b)} at x = {x:.0f} mm, y = {y:.0f} mm. "
             f"{_cap(_label(top))} is on top ({top.style.height_mm:g} mm tall "
             f"against {other.style.height_mm:g} mm)."
         )
-        lines += _wrap(m, text, "  ")
+        lines += _wrap(m, text, bullet=True)
     return lines
 
 
@@ -381,9 +418,9 @@ def close_parallels(m: DescribeInput) -> list[str]:
     ctx = AnalysisContext(m.spec, m.profile, m.printer, m.hf, m.source_resolution_m)
     result = Spacing().analyze(ctx)
     if not result.suggestions:
-        return [*lines, "No two lines run too close together."]
+        return [*lines, "- No two lines run too close together."]
     for s in result.suggestions:
-        lines += _wrap(m, s.message, "  ")
+        lines += _wrap(m, s.message, bullet=True)
     return lines
 
 
@@ -409,26 +446,26 @@ def _format_samples(m, samples, span, step, label) -> list[str]:
         )
         for p in positions
     ]
-    return _wrap(m, "; ".join(cells), "  ")
+    return _wrap(m, "; ".join(cells))
 
 
 def _extra_section(m: DescribeInput, request: dict[str, Any]) -> list[str]:
     step = m.settings.extra_section_step_mm
     every = f"every {step:g} mm"
     if "y_mm" in request:
-        head = f"East-west section at y = {request['y_mm']:g} mm, {every}:"
-        return [head, *_section_values(m, "EW", request["y_mm"], step)]
+        head = f"East-west section at y = {request['y_mm']:g} mm, {every}"
+        return [*_sub(head), *_section_values(m, "EW", request["y_mm"], step)]
     if "x_mm" in request:
-        head = f"North-south section at x = {request['x_mm']:g} mm, {every}:"
-        return [head, *_section_values(m, "NS", request["x_mm"], step)]
+        head = f"North-south section at x = {request['x_mm']:g} mm, {every}"
+        return [*_sub(head), *_section_values(m, "NS", request["x_mm"], step)]
     if "through" in request:
         name = request["through"]
         x, y = _locate(m, name)
         direction = request.get("direction", "EW")
         word = "East-west" if direction == "EW" else "North-south"
         fixed = f"y = {y:.0f} mm" if direction == "EW" else f"x = {x:.0f} mm"
-        head = f"{word} section through {name} at {fixed}, {every}:"
-        return [head, *_section_values(m, direction, y if direction == "EW" else x, step)]
+        head = f"{word} section through {name} at {fixed}, {every}"
+        return [*_sub(head), *_section_values(m, direction, y if direction == "EW" else x, step)]
     raise ValueError("A section needs y_mm, x_mm or through.")
 
 
@@ -453,11 +490,11 @@ def cross_sections(m: DescribeInput, extra: list[dict[str, Any]] | None = None) 
     ]
     for fraction in s.section_fractions_y:
         at = fraction * depth
-        lines.append(f"East-west section at y = {at:.0f} mm ({fraction:.0%} of the way north):")
+        lines += _sub(f"East-west section at y = {at:.0f} mm ({fraction:.0%} of the way north)")
         lines += _section_values(m, "EW", at, s.section_step_mm)
     for fraction in s.section_fractions_x:
         at = fraction * width
-        lines.append(f"North-south section at x = {at:.0f} mm ({fraction:.0%} of the way east):")
+        lines += _sub(f"North-south section at x = {at:.0f} mm ({fraction:.0%} of the way east)")
         lines += _section_values(m, "NS", at, s.section_step_mm)
     for request in extra or []:
         lines += _extra_section(m, request)
@@ -477,10 +514,10 @@ def legend(m: DescribeInput) -> list[str]:
             m,
             f"{_cap(f.type)}: {PROFILE_WORDS[entry.profile]}, {entry.width_mm:g} mm wide "
             f"and {entry.height_mm:g} mm tall (style {f.style}, from {f.provider}).",
-            "  ",
+            bullet=True,
         )
     if not seen:
-        lines.append("No line features are used.")
+        lines.append("- No line features are used.")
     return lines
 
 
@@ -489,9 +526,9 @@ def distortion(m: DescribeInput) -> list[str]:
     real_per_mm = t.scale_m_per_mm / t.z_exaggeration
     return [
         "Distortion",
-        f"No horizontal distortion: 1 mm = {t.scale_m_per_mm:g} m in every direction.",
+        f"- No horizontal distortion: 1 mm = {t.scale_m_per_mm:g} m in every direction.",
         (
-            f"Vertical exaggeration is {t.z_exaggeration:g} times everywhere, so 1 mm of height "
+            f"- Vertical exaggeration is {t.z_exaggeration:g} times everywhere, so 1 mm of height "
             f"stands for {real_per_mm:.1f} m of real elevation."
         ),
     ]
@@ -501,7 +538,16 @@ def attribution(m: DescribeInput) -> list[str]:
     from tactile_terrain.attribution import sources_used
 
     names = ", ".join(info.name for info in sources_used(m.spec))
-    return ["Attribution", *_wrap(m, f"Data from {names}. Full credits are in ATTRIBUTION.txt.")]
+    text = f"Data from {names}. Full credits are in ATTRIBUTION.txt."
+    return ["Attribution", *_wrap(m, text, bullet=True)]
+
+
+def _markdown(title: str, blocks: list[list[str]]) -> str:
+    """Join sections under a title: each block's first line is its second-level heading."""
+    parts = [f"# {title}"]
+    for heading, *body in blocks:
+        parts += ["", f"## {heading}", "", *body]
+    return re.sub(r"\n{3,}", "\n\n", "\n".join(parts)).rstrip("\n") + "\n"
 
 
 def describe(m: DescribeInput, extra_sections: list[dict[str, Any]] | None = None) -> str:
@@ -517,7 +563,7 @@ def describe(m: DescribeInput, extra_sections: list[dict[str, Any]] | None = Non
         distortion(m),
         attribution(m),
     ]
-    return "\n\n".join("\n".join(block) for block in blocks) + "\n"
+    return _markdown(f"Tactile model description: {m.spec.name}", blocks)
 
 
 # --- sampler plates -----------------------------------------------------------------------
@@ -567,51 +613,41 @@ def describe_sampler(plate, spec, paths: dict[str, str], settings: DescribeSetti
         )
     summary = [
         "Summary",
-        f"Sampler plate {spec.name}, made with the {spec.style.tactile_profile} tactile profile.",
+        f"- Sampler plate {spec.name}, made with the {spec.style.tactile_profile} tactile profile.",
         (
-            f"Plate: {plate.width_mm:.1f} mm east-west by {plate.height_mm:.1f} mm north-south, "
+            f"- Plate: {plate.width_mm:.1f} mm east-west by {plate.height_mm:.1f} mm north-south, "
             f"{plate.base_mm:g} mm base. Printer: {spec.print.printer}."
         ),
         *_wrap(
             m,
             f"Every sample is a straight line {plate.sample_length_mm:g} mm long running "
             f"east-west.{shortened} Shuffle seed {plate.seed}.",
+            bullet=True,
         ),
     ]
-    summary += [f"{label}: {path}" for label, path in paths.items()]
-    notches = [
-        "Orientation",
+    summary += [f"- {label}: {path}" for label, path in paths.items()]
+    notes = [
         "North is the far edge. The origin, x = 0 mm and y = 0 mm, is the south-west corner.",
-        *_wrap(
-            m,
-            "One notch in the middle of the north edge marks north. Notches on the left edge "
-            "give the row: one notch for row one, two for row two, and so on from north to south.",
-        ),
-        *_wrap(
-            m,
-            "Each sample has a raised numeral below it. Count the notches to find the row, "
-            "then read the numeral to find the sample. Braille is not needed.",
-        ),
-        *_wrap(
-            m,
-            "Feel the plate first and note which pairs feel the same and which feel different, "
-            "and where lines merge. This list reveals the answers, including which pairs are "
-            "identical controls.",
-        ),
+        "One notch in the middle of the north edge marks north. Notches on the left edge "
+        "give the row: one notch for row one, two for row two, and so on from north to south.",
+        "Each sample has a raised numeral below it. Count the notches to find the row, "
+        "then read the numeral to find the sample. Braille is not needed.",
+        "Feel the plate first and note which pairs feel the same and which feel different, "
+        "and where lines merge. This list reveals the answers, including which pairs are "
+        "identical controls.",
     ]
+    notches = ["Orientation", *_bullets(m, notes)]
     body = ["Rows"]
     for row in plate.rows:
         y0 = row.top_mm - row.height_mm
-        body += [
-            "",
-            *_wrap(
-                m,
-                f"Row {row.number}, {ROW_TITLES[row.kind]}. Between y = {y0:.0f} mm and "
-                f"y = {row.top_mm:.0f} mm.",
-            ),
-        ]
+        body += _sub(
+            f"Row {row.number}, {ROW_TITLES[row.kind]}. Between y = {y0:.0f} mm and "
+            f"y = {row.top_mm:.0f} mm"
+        )
         for cell in row.cells:
             text = f"{_cell_text(cell)} Numeral {cell.number} at x = {cell.centre_x_mm:.0f} mm."
-            body += _wrap(m, text, "  ")
-    credit = ["Attribution", "No map data is used in a sampler plate."]
-    return "\n\n".join("\n".join(block) for block in (summary, notches, body, credit)) + "\n"
+            body += _wrap(m, text, bullet=True)
+    credit = ["Attribution", "- No map data is used in a sampler plate."]
+    return _markdown(
+        f"Tactile sampler plate description: {spec.name}", [summary, notches, body, credit]
+    )

@@ -520,7 +520,8 @@ Each analyzer returns metrics and suggestions. A suggestion is `{severity, messa
 
 **Output rules:**
 
-- headings and short lines
+- Markdown: a `#` title, `##` sections, `###` entities (one per named feature, so a stream drawn in two styles is one entry) and `-` bullets for facts, so a heading search finds a feature
+- short lines
 - units on every number
 - tables of at most four columns
 - positions in print mm
