@@ -233,3 +233,20 @@ def test_joined_pieces_of_one_feature_are_not_close_parallels():
     a = PlacedLine("Main Street", "road", style, LineString([(0, 20), (30, 20)]))
     b = PlacedLine("", "road", style, LineString([(30, 20), (60, 20)]))
     assert Spacing().analyze(make_ctx(lines=[a, b])).suggestions == []
+
+
+def test_one_named_stream_in_two_styles_is_not_its_own_close_parallel():
+    profile = load_profile("standard")
+    a = PlacedLine(
+        "Vasquez Creek",
+        "river",
+        resolve_style("rounded_major", profile),
+        LineString([(0, 20), (30, 20)]),
+    )
+    b = PlacedLine(
+        "Vasquez Creek",
+        "creek",
+        resolve_style("rounded_minor", profile),
+        LineString([(30, 20), (60, 20)]),
+    )
+    assert Spacing().analyze(make_ctx(lines=[a, b])).suggestions == []

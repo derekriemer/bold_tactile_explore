@@ -55,3 +55,8 @@ Each is classed as a data issue, a describe bug, an analyzer bug, a server bug o
 - winter-park-library (Louisville, usable 142 by 142 mm): 93 m/mm. Footprint 141.8 by 131.2 mm, 24.8 mm tall. It now fits; the earlier overflow is closed.
 - Water duplicates fixed in the lines stage: a river or creek reach already placed by an earlier water feature is not placed again, so "Fraser River (creek)" no longer repeats the river.
 - Still open: Fraser River and US 40 run together; `rounded_minor` and `pointed` stay 1.2 mm wide, below the Louisville 1.5 mm minimum.
+
+## Cirques crop moved to Vasquez (2026-10-25)
+
+- `winter-park-cirques` now covers the Vasquez Peak cirque: box -105.885, 39.785, -105.827, 39.831 (about 5 km square), 125 m/mm, Louisville printer. It was the Second Creek cirques near Berthoud Pass, which the plan chose; the user knows Vasquez better and can judge it.
+- The spacing check no longer flags one named stream drawn in two styles against itself.

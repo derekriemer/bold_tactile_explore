@@ -98,7 +98,10 @@ def _wrap(m: DescribeInput, text: str, indent: str = "", bullet: bool = False) -
     glued = GLUED.sub(lambda hit: hit.group(0).replace(" ", GLUE), text)
     first = indent + "- " if bullet else indent
     wrapped = textwrap.wrap(
-        glued, width=m.settings.wrap_chars, initial_indent=first, subsequent_indent=indent + ("  " if bullet else "")
+        glued,
+        width=m.settings.wrap_chars,
+        initial_indent=first,
+        subsequent_indent=indent + ("  " if bullet else ""),
     )
     return [line.replace(GLUE, " ") for line in wrapped] or [""]
 

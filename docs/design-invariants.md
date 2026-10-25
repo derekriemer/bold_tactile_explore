@@ -1,6 +1,6 @@
 # Design invariants
 
-These are deliberate decisions, kept explicit so that a later refactor or "simplification" doesn't quietly undo them. Copy this section into the repo as `docs/design-invariants.md`, and point to it from `CONTRIBUTING.md` and from comments at the relevant code.
+These are deliberate decisions, kept explicit so that a later refactor or "simplification" doesn't quietly undo them. This file is the only copy: the [design spec](design-spec.md) links here instead of repeating it. Do not remove an invariant. Point to this file from `CONTRIBUTING.md` and from comments at the relevant code.
 
 1. **Tactile parameters are per person, never hard-coded.**
    - *Why:* tactile sensitivity varies widely, and the people most affected are the people this tool is for. Diabetic neuropathy is common among blind people, because diabetes is a leading cause of blindness. Age, calluses, other neuropathies, and plain biological variation all reduce what a fingertip can resolve. A single tuned default works only for whoever tuned it, and silently excludes everyone else.
