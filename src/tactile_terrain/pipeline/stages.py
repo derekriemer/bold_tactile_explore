@@ -14,12 +14,14 @@ from rasterio.warp import Resampling, calculate_default_transform, reproject
 from scipy import ndimage
 
 import tactile_terrain.export.stl
+import tactile_terrain.providers
 import tactile_terrain.warp  # noqa: F401  (registers the identity warp)
 from tactile_terrain.config import PrinterProfile
 from tactile_terrain.geo import PrintTransform, utm_crs_for
 from tactile_terrain.mesh import heightfield_to_mesh
 from tactile_terrain.pipeline.cache import StageCache, stage_key
 from tactile_terrain.providers.base import ElevationGrid
+from tactile_terrain.providers.cache import using_cache_dir
 from tactile_terrain.registry import elevation_providers, exporters
 from tactile_terrain.spec import Spec
 from tactile_terrain.tactile.profile import load_profile
@@ -206,13 +208,14 @@ def run_pipeline(
     cache = StageCache(ctx.model_dir)
     results: dict[str, Any] = {}
     key, upstream = "", None
-    for stage in stages or STAGES:
-        key = stage_key(stage.name, stage.spec_slice(spec, ctx), key)
-        hit, result = cache.load(stage.name, key)
-        if not (hit and stage.valid(result)):
-            result = stage.func(spec, upstream, ctx)
-            cache.store(stage.name, key, result)
-        results[stage.name] = upstream = result
+    with using_cache_dir(ctx.model_dir / "cache"):
+        for stage in stages or STAGES:
+            key = stage_key(stage.name, stage.spec_slice(spec, ctx), key)
+            hit, result = cache.load(stage.name, key)
+            if not (hit and stage.valid(result)):
+                result = stage.func(spec, upstream, ctx)
+                cache.store(stage.name, key, result)
+            results[stage.name] = upstream = result
     return results
 
 
