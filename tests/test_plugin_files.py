@@ -25,15 +25,15 @@ def server_tools():
 def test_manifests_parse_and_agree():
     plugin = load(".claude-plugin/plugin.json")
     market = load(".claude-plugin/marketplace.json")
-    mcp = load(".mcp.json")
+    mcp = plugin
     assert plugin["name"] == "tactile-terrain" and plugin["version"]
     assert [p["name"] for p in market["plugins"]] == [plugin["name"]]
     assert market["plugins"][0]["source"] == "./"
     assert "tactile-terrain" in mcp["mcpServers"]
 
 
-def test_mcp_json_launches_the_real_command():
-    server = load(".mcp.json")["mcpServers"]["tactile-terrain"]
+def test_plugin_server_launches_the_real_command():
+    server = load(".claude-plugin/plugin.json")["mcpServers"]["tactile-terrain"]
     assert server["command"] == "uv" and server["args"][-2:] == ["tactile-terrain", "mcp"]
     assert "${CLAUDE_PLUGIN_ROOT}" in server["args"] and "--frozen" in server["args"]
     pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
@@ -60,3 +60,8 @@ def test_skill_never_mentions_images_as_output():
     text = skill_text().lower()
     assert "as you can see" in text  # only inside the instruction not to say it
     assert "never refer to images" in text
+
+
+def test_no_project_level_mcp_json():
+    """A repo-root .mcp.json would also load as a project server, where the plugin root is unset."""
+    assert not (ROOT / ".mcp.json").exists()
