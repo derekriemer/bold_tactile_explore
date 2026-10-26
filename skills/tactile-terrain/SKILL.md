@@ -32,7 +32,17 @@ units on every number; give positions as mm from the south-west corner, north is
 Use `update_model` with the smallest change. Say what changed in before → after form, then run
 `describe_model` again if anything the user can feel changed, and `check_print`.
 If `analyze_model` attaches a fix, offer it; apply it only when the user agrees.
-Every edit keeps the previous spec, so "undo that" is `update_model` with `revert_to`.
+Every edit keeps the previous spec, so you can always back out of a mistake.
+
+- "Undo that", or you notice your own edit was wrong (for example a crop took too much, or a
+  filter dropped something you needed): `update_model` with `{"revert_to": "last"}`.
+- Further back: `model_history` lists every version and what changed between them; pick a number
+  and use `{"revert_to": N}`. Reverting is itself undoable, because the state you leave is kept.
+- Don't try to undo a crop by cropping the other way: `crop_percent` is relative to the current
+  area, so it does not invert. Revert, then make the smaller change.
+- A `features` change in a merge-patch replaces the whole list. Read `get_spec` first and send
+  every feature you want to keep, or revert and try again.
+- Tell the user you reverted and why, in one line.
 
 ## Defaults and rules of thumb
 

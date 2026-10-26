@@ -129,3 +129,26 @@ def test_description_file_follows_the_edit(model):
     assert "exaggeration: 1.5 times" in (model / "DESCRIPTION.md").read_text(encoding="utf-8")
     api.update_model("m", {"z_multiply": 2})
     assert "exaggeration: 3 times" in (model / "DESCRIPTION.md").read_text(encoding="utf-8")
+
+
+def test_revert_to_last_undoes_the_latest_edit_and_runs_again_to_redo_it(model):
+    api.update_model("m", {"z_multiply": 2})
+    api.update_model("m", {"revert_to": "last"})
+    assert spec_of(model)["print"]["z_exaggeration"] == 1.5
+    api.update_model("m", {"revert_to": "last"})
+    assert spec_of(model)["print"]["z_exaggeration"] == 3.0
+
+
+def test_revert_to_last_with_no_edits_says_nothing_to_undo(model):
+    with pytest.raises(FileNotFoundError, match="Nothing to undo"):
+        api.update_model("m", {"revert_to": "last"})
+
+
+def test_history_lists_versions_and_what_changed(model):
+    assert "has not been edited" in api.model_history("m")
+    api.update_model("m", {"z_multiply": 2})
+    api.update_model("m", {"print": {"base_mm": 4.0}})
+    text = api.model_history("m")
+    assert "Version 1: the first spec." in text and "Version 2:" in text and "Current:" in text
+    assert "print.z_exaggeration: 1.5 → 3.0" in text and "print.base_mm: 3.0 → 4.0" in text
+    assert "revert_to" in text

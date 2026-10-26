@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 SHORTCUTS = ("z_multiply", "crop_percent", "drop_feature", "revert_to")
+LAST_WORDS = ("last", "previous")  # revert_to values meaning the newest earlier version
 CROP_EDGES = ("north", "south", "east", "west")
 DIFF_VALUE_CHARS = 80
 PERCENT = 100
@@ -66,6 +67,11 @@ def apply_changes(current: dict[str, Any], changes: dict[str, Any], model_dir: P
     drop = changes.pop("drop_feature", None)
 
     new = copy.deepcopy(current)
+    if revert in LAST_WORDS:  # undo the most recent edit (and, run again, redo it)
+        numbers = backup_numbers(model_dir)
+        if not numbers:
+            raise FileNotFoundError("Nothing to undo: this model has no earlier versions.")
+        revert = numbers[-1]
     if revert is not None:
         earlier = model_dir / f"spec.{int(revert)}.json"
         if not earlier.exists():

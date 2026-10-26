@@ -133,11 +133,20 @@ async def create_model(
 async def update_model(name: str, changes: dict[str, Any], ctx: Context | None = None) -> str:
     """Change a model and rebuild it. changes is a JSON merge-patch of the spec, plus the
     shortcuts z_multiply (factor), crop_percent ({north|south|east|west: percent}),
-    drop_feature (type) and revert_to (earlier version number). Reports each change as
+    drop_feature (type) and revert_to (an earlier version number, or "last" to undo the latest edit). Reports each change as
     before to after. An invalid change leaves the model untouched."""
     from tactile_terrain import api
 
     return await _in_thread(ctx, api.update_model, name, changes)
+
+
+@mcp.tool()
+async def model_history(name: str) -> str:
+    """The saved versions of a model's spec, oldest first, with what changed between each pair.
+    Use it to choose a version for update_model's revert_to after a change went wrong."""
+    from tactile_terrain import api
+
+    return await _quick(api.model_history, name)
 
 
 @mcp.tool()

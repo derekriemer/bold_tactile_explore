@@ -380,6 +380,36 @@ def update_model(name: str, changes: dict, on_progress=None) -> str:
     return "\n".join(lines) + "\n\n" + summary
 
 
+def model_history(name: str) -> str:
+    """Every saved version of a model's spec, oldest first, with what changed between them."""
+    model_dir = _model_dir(name)
+    numbers = backup_numbers(model_dir)
+    if not numbers:
+        return f"Model {name} has no earlier versions; it has not been edited."
+    states = [
+        (f"Version {n}", json.loads((model_dir / f"spec.{n}.json").read_text(encoding="utf-8")))
+        for n in numbers
+    ]
+    states.append(("Current", json.loads((model_dir / "spec.json").read_text(encoding="utf-8"))))
+    lines = [
+        f"History of model {name}, oldest first.",
+        (
+            'To go back, call update_model with {"revert_to": N}, or {"revert_to": "last"} to undo '
+            "the latest edit. Going back keeps the state you leave as a new version, so it can be undone."
+        ),
+    ]
+    previous = None
+    for label, state in states:
+        if previous is None:
+            lines.append(f"{label}: the first spec.")
+        else:
+            changed = diff_lines(previous, state)
+            lines.append(f"{label}: " + ("same as the version before." if not changed else ""))
+            lines += [f"  {c}" for c in changed]
+        previous = state
+    return "\n".join(lines)
+
+
 def list_models() -> str:
     cfg = load_config()
     names = _model_names(cfg)
