@@ -70,3 +70,18 @@ uv run tactile-terrain build examples/winter-park-library.json
 ```bash
 uv run tactile-terrain doctor
 ```
+
+## Development plugin (alpha testing)
+
+The published plugin never contains alpha-test tools. For your own testing, build the development plugin:
+
+```bash
+uv run tactile-terrain dev-plugin
+```
+
+It writes the git-ignored folder `dev-plugin/`, so it can't be pushed or published by accident. It holds the same skill plus an alpha-test skill, and the server it starts runs from this checkout with `TACTILE_TERRAIN_DEV=1`. That adds a `write_dev_note` tool, and the skill tells Claude to use it whenever its workflow is awkward. Notes are saved as Markdown in `~/TactileModels/dev-notes/`.
+
+To load it:
+
+- Claude Code: `claude --plugin-dir dev-plugin`, or `claude plugin marketplace add dev-plugin` then `claude plugin install tactile-terrain-dev@tactile-terrain-dev-local`.
+- Claude desktop (Cowork): upload `dev-plugin/tactile-terrain-dev.plugin` through the plugin or customize screen, if your version has one.

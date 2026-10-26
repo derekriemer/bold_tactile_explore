@@ -7,6 +7,7 @@ libraries are imported inside the tools so the server starts quickly.
 from __future__ import annotations
 
 import logging
+import os
 import sys
 from collections.abc import Callable
 from contextlib import redirect_stdout
@@ -15,6 +16,8 @@ from typing import Any
 import anyio
 from mcp.server.mcpserver import Context, MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
+
+from tactile_terrain.devkit import DEV_ENV
 
 INSTRUCTIONS = """\
 Tactile terrain: turn a map area into a 3D-printable model a blind person can read by touch.
@@ -225,6 +228,25 @@ async def get_spec(name: str) -> str:
     from tactile_terrain import api
 
     return await _quick(api.get_spec, name)
+
+
+async def write_dev_note(title: str, body: str) -> str:
+    """Alpha testing only. Record where your workflow with these tools was hard, or a tool you
+    wish existed. One topic per note: what you tried, what was hard, and one change that would
+    have helped."""
+    from tactile_terrain.config import load_config
+    from tactile_terrain.devkit.notes import write_dev_note as save
+
+    return await _quick(lambda: save(load_config().models_path, title, body))
+
+
+def register_dev_tools() -> None:
+    """The alpha-test tools exist only in the development plugin, which sets TACTILE_TERRAIN_DEV."""
+    mcp.tool()(write_dev_note)
+
+
+if os.environ.get(DEV_ENV):
+    register_dev_tools()
 
 
 def run() -> None:

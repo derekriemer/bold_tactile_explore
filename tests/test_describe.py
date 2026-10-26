@@ -32,7 +32,12 @@ def line(name, type_, style, coords):
 
 def make_input(terrain=None, lines=(), points=(), types=("river", "road", "lift"), mode="terrain"):
     terrain = np.full((NY, NX), BASE) if terrain is None else terrain
-    styles = {"river": "rounded_major", "creek": "rounded_minor", "road": "flat_top", "lift": "pointed"}
+    styles = {
+        "river": "rounded_major",
+        "creek": "rounded_minor",
+        "road": "flat_top",
+        "lift": "pointed",
+    }
     spec = Spec.model_validate(
         {
             "name": "synthetic",

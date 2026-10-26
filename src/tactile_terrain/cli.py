@@ -16,6 +16,9 @@ def build_parser() -> argparse.ArgumentParser:
     build.add_argument("spec", help="Path to a spec JSON file.")
     build.add_argument("--overwrite", action="store_true", help="Rebuild an existing model.")
     sub.add_parser("doctor", help="Check the installation.")
+    sub.add_parser(
+        "dev-plugin", help="Build the local development plugin (git-ignored, never published)."
+    )
     return parser
 
 
@@ -39,6 +42,14 @@ def main(argv: list[str] | None = None) -> int:
         from tactile_terrain import api
 
         print(api.doctor())
+        return 0
+    if args.command == "dev-plugin":
+        from pathlib import Path
+
+        from tactile_terrain.devkit.plugin import build_dev_plugin
+
+        repo = Path(__file__).resolve().parents[2]
+        print(f"Built {build_dev_plugin(repo)}")
         return 0
     print(f"{args.command}: not implemented yet")
     return 0
