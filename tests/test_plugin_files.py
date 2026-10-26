@@ -5,7 +5,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).parent.parent
 # Backticked snake_case words in SKILL.md that are spec fields or options, not tools.
-NOT_TOOLS = {"revert_to", "z_multiply", "crop_percent", "drop_feature"}
+NOT_TOOLS = {
+    "revert_to", "z_multiply", "crop_percent", "drop_feature", "include_refs", "include_names",
+    "exclude_refs", "exclude_names", "merge_within_m",
+}  # fmt: skip
 
 
 def load(path):
