@@ -27,6 +27,17 @@ units on every number; give positions as mm from the south-west corner, north is
    not say, and keep the headings so the sections stay skippable.
 6. `check_print` before calling the model done. Report the file paths.
 
+## Choosing lines
+
+- `resolve_area` lists roads with each ref and the road it belongs to ("CR 56 = Baseline Road"),
+  so you never have to guess a ref. Roads filter by `classes`, `include_refs`, `include_names`,
+  `exclude_refs` and `exclude_names`. Exclusions are applied last.
+- Before changing a filter, run `preview_features`. It says which lines each feature would keep
+  and which it would leave out, with lengths, without building anything.
+- A divided road shows as two parallel lines. Add `"merge_within_m": 30` (the carriageway gap in
+  metres, rounded up) to that feature's filter to keep one.
+- To check a change without reading everything, call `describe_model` with `brief: true`.
+
 ## Editing
 
 Use `update_model` with the smallest change. Say what changed in before → after form, then run

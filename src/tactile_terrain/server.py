@@ -141,6 +141,21 @@ async def update_model(name: str, changes: dict[str, Any], ctx: Context | None =
 
 
 @mcp.tool()
+async def preview_features(
+    features: list[dict[str, Any]] | None = None,
+    name: str | None = None,
+    bbox: list[float] | None = None,
+) -> str:
+    """Dry run for feature filters: which lines each feature would keep and which available
+    lines it would leave out, with lengths, without building or changing anything. Give name
+    (an existing model; its area and, if features is omitted, its features are used) and/or
+    bbox [west, south, east, north]. features uses the same shape as in create_model."""
+    from tactile_terrain import api
+
+    return await _quick(api.preview_features, features, name, bbox)
+
+
+@mcp.tool()
 async def model_history(name: str) -> str:
     """The saved versions of a model's spec, oldest first, with what changed between each pair.
     Use it to choose a version for update_model's revert_to after a change went wrong."""
@@ -150,14 +165,17 @@ async def model_history(name: str) -> str:
 
 
 @mcp.tool()
-async def describe_model(name: str, sections: list[dict[str, Any]] | None = None) -> str:
+async def describe_model(
+    name: str, sections: list[dict[str, Any]] | None = None, brief: bool = False
+) -> str:
     """Read a model out as text: footprint, scale, high and low points, the course of every
     line, crossings, cross-sections, the tactile legend and distortion. sections adds extra
     cross-sections: {"y_mm": 40}, {"x_mm": 60} or {"through": "Second Creek", "direction":
-    "EW"}."""
+    "EW"}. brief=true returns only the overview, warnings, legend and distortion, for checking
+    a change without reading the whole description."""
     from tactile_terrain import api
 
-    return await _quick(api.describe_model, name, sections)
+    return await _quick(api.describe_model, name, sections, brief)
 
 
 @mcp.tool()

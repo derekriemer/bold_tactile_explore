@@ -39,7 +39,12 @@ class Osm:
     """Roads, ski lifts and named peaks from OpenStreetMap."""
 
     filters: ClassVar[dict[str, str]] = {
-        "road": "classes (motorway, trunk, primary, secondary, tertiary), include_refs (refs always kept, for example US 40)",
+        "road": (
+            "classes (motorway, trunk, primary, secondary, tertiary), include_refs and "
+            "include_names (always kept, for example US 40 or Baseline Road), exclude_refs and "
+            "exclude_names (always dropped, applied last), merge_within_m (merge same-name parallel "
+            "lines closer than this many metres, for divided roads)"
+        ),
         "lift": "aerialway (all, or a list of types), exclude (list of types to leave out)",
     }
     source = SourceInfo(
@@ -99,6 +104,9 @@ class Osm:
     def _roads(self, bbox: BBox, filter: dict[str, Any]) -> list[LineFeature]:
         classes = filter.get("classes")
         wanted_refs = filter.get("include_refs", [])
+        wanted_names = filter.get("include_names", [])
+        dropped_refs = filter.get("exclude_refs", [])
+        dropped_names = filter.get("exclude_names", [])
         out = []
         for el, tags, line in self._ways(bbox, "highway"):
             highway = tags["highway"]
@@ -108,7 +116,12 @@ class Osm:
                 or highway in classes
                 or base in classes
                 or any(name_matches(r, wanted_refs) for r in _refs(tags))
+                or name_matches(tags.get("name", ""), wanted_names)
             ):
+                if name_matches(tags.get("name", ""), dropped_names) or any(
+                    name_matches(r, dropped_refs) for r in _refs(tags)
+                ):
+                    continue
                 attrs = {"ref": tags.get("ref", ""), "osm_id": el["id"]}
                 out.append(LineFeature(line, tags.get("name", ""), highway, attrs))
         return out

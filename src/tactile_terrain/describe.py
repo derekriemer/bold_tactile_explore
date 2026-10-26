@@ -765,7 +765,23 @@ def _markdown(title: str, blocks: list[list[str]]) -> str:
     return re.sub(r"\n{3,}", "\n\n", "\n".join(parts)).rstrip("\n") + "\n"
 
 
-def describe(m: DescribeInput, extra_sections: list[dict[str, Any]] | None = None) -> str:
+def describe(
+    m: DescribeInput,
+    extra_sections: list[dict[str, Any]] | None = None,
+    brief_warnings: str | None = None,
+) -> str:
+    """The full description. With `brief_warnings` (the analysis text) only the short form."""
+    if brief_warnings is not None:
+        warnings = ["Warnings and checks", *_bullets(m, brief_warnings.splitlines())]
+        more = [
+            "More detail",
+            (
+                "- Call describe_model without brief for exact positions, every line's course, "
+                "crossings and cross-sections."
+            ),
+        ]
+        blocks = [overview(m), warnings, legend(m), distortion(m), more]
+        return _markdown(f"Tactile model description (brief): {m.spec.name}", blocks)
     blocks = [
         overview(m),
         summary(m),

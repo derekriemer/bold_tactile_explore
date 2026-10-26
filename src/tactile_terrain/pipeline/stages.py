@@ -166,6 +166,17 @@ def _to_print_mm(geometry, hf: Heightfield):
     return shapely.transform(geometry, convert)
 
 
+def merge_parallels(geometries: list, distance_mm: float) -> list:
+    """Keep the longest line of a divided road and drop the parallel parts within `distance_mm`."""
+    ordered = sorted(geometries, key=lambda g: -g.length)
+    kept = [ordered[0]]
+    for geometry in ordered[1:]:
+        rest = shapely.difference(geometry, shapely.buffer(shapely.union_all(kept), distance_mm))
+        if not rest.is_empty:
+            kept.append(rest)
+    return kept
+
+
 def lines(spec: Spec, hf: Heightfield, ctx: Context) -> Heightfield:
     profile = apply_overrides(load_profile(spec.style.tactile_profile), spec.style.overrides)
     placed: list[PlacedLine] = []
@@ -185,7 +196,10 @@ def lines(spec: Spec, hf: Heightfield, ctx: Context) -> Heightfield:
         taken_union = (
             shapely.buffer(shapely.union_all(taken), SHARED_REACH_MM) if shares and taken else None
         )
+        merge_mm = float(feature.filter.get("merge_within_m", 0)) / hf.transform.scale_m_per_mm
         for name, geometries in sorted(by_name.items()):
+            if name and merge_mm > 0:
+                geometries = merge_parallels(geometries, merge_mm)
             merged = shapely.line_merge(shapely.union_all(geometries))
             if taken_union is not None:
                 merged = shapely.line_merge(shapely.difference(merged, taken_union))

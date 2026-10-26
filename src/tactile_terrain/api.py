@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import math
 import shutil
@@ -17,7 +18,7 @@ from tactile_terrain.analyzers import AnalysisContext, format_analysis, run_all
 from tactile_terrain.attribution import write_attribution
 from tactile_terrain.config import load_config
 from tactile_terrain.editing import apply_changes, backup_numbers, diff_lines
-from tactile_terrain.geo import projected_bounds, utm_crs_for
+from tactile_terrain.geo import lonlat_transformer, projected_bounds, utm_crs_for
 from tactile_terrain.pipeline.stages import run_pipeline
 from tactile_terrain.providers import nominatim
 from tactile_terrain.providers.base import BBox
@@ -98,14 +99,19 @@ def resolve_area(
     osm = line_providers.get("osm")
     roads = osm.fetch(bbox, "road", {})
     by_class: dict[str, list[str]] = defaultdict(list)
-    refs: dict[str, set[str]] = defaultdict(set)
+    refs: dict[str, dict[str, set[str]]] = defaultdict(lambda: defaultdict(set))
     for r in roads:
         by_class[r.kind].append(r.name)
-        if r.attrs["ref"]:
-            refs[r.kind].add(r.attrs["ref"])
+        for ref in filter(None, (p.strip() for p in r.attrs["ref"].split(";"))):
+            refs[r.kind][ref].add(r.name or "unnamed")
     lines.append(f"Roads (motorway through tertiary): {len(roads)} segments.")
     for kind in sorted(by_class):
-        ref_text = ", ".join(sorted(refs[kind])) or "none"
+        ref_text = (
+            ", ".join(
+                f"{ref} = {' / '.join(sorted(names))}" for ref, names in sorted(refs[kind].items())
+            )
+            or "none"
+        )
         lines.append(
             f"  {kind}: {len(by_class[kind])} segments; refs: {ref_text}; "
             f"names: {_name_list(by_class[kind])}."
@@ -133,6 +139,7 @@ def resolve_area(
 MM_PER_M = 1000
 BYTES_PER_MB = 1_000_000
 MAX_DROPPED_LISTED = 10
+MAX_LISTED_OUT = 15
 
 
 def _summary(spec: Spec, result: dict, seconds: float, model_dir) -> str:
@@ -192,12 +199,25 @@ def build_spec(spec: Spec, overwrite: bool = False, on_progress=None) -> str:
             f"Model '{spec.name}' already exists in {model_dir}. "
             "Use overwrite, or change it with update_model."
         )
+    spec_path = model_dir / "spec.json"
+    before = spec_path.read_bytes() if spec_path.exists() else None
     model_dir.mkdir(parents=True, exist_ok=True)
-    save_spec(spec, model_dir / "spec.json")
+    save_spec(spec, spec_path)
     start = time.perf_counter()
-    result = run_pipeline(spec, model_dir, cfg.printer(spec.print.printer), on_stage=on_progress)
-    write_attribution(spec, model_dir / "ATTRIBUTION.txt")
-    _save_description(spec.name, model_dir)
+    try:
+        result = run_pipeline(
+            spec, model_dir, cfg.printer(spec.print.printer), on_stage=on_progress
+        )
+        write_attribution(spec, model_dir / "ATTRIBUTION.txt")
+        _save_description(spec.name, model_dir)
+    except BaseException:
+        # A failed build must not leave a model behind that blocks the retry: put the old spec
+        # back, or remove the new one. Downloaded data in cache/ stays, so the retry is quick.
+        if before is None:
+            spec_path.unlink(missing_ok=True)
+        else:
+            spec_path.write_bytes(before)
+        raise
     summary = _summary(spec, result, time.perf_counter() - start, model_dir)
     return "\n\n".join([summary, "Analysis:", _analysis_text(spec, result, cfg)])
 
@@ -291,8 +311,9 @@ def _save_description(name: str, model_dir) -> None:
     (model_dir / "DESCRIPTION.md").write_text(describe_model(name), encoding="utf-8")
 
 
-def describe_model(name: str, sections: list[dict] | None = None) -> str:
-    """The full text description of a built model. `sections` adds extra cross-sections."""
+def describe_model(name: str, sections: list[dict] | None = None, brief: bool = False) -> str:
+    """The text description of a built model. `sections` adds extra cross-sections. `brief`
+    gives only the overview, warnings, legend and distortion."""
     from tactile_terrain.describe import DescribeInput, describe
 
     cfg = load_config()
@@ -329,6 +350,8 @@ def describe_model(name: str, sections: list[dict] | None = None) -> str:
         },
         source_resolution_m=_source_resolution_m(spec, result),
     )
+    if brief:
+        return describe(m, brief_warnings=_analysis_text(spec, result, cfg))
     return describe(m, sections)
 
 
@@ -378,6 +401,72 @@ def update_model(name: str, changes: dict, on_progress=None) -> str:
     summary = build_spec(spec, overwrite=True, on_progress=on_progress)
     lines = ["Changes:", *[f"  {c}" for c in changed], f"Previous spec kept as {backup.name}."]
     return "\n".join(lines) + "\n\n" + summary
+
+
+def _lengths_m(features, crs: str) -> dict[tuple[str, str], float]:
+    """Ground length in metres of each (name, kind), summed over its segments."""
+    import shapely
+
+    transformer = lonlat_transformer(crs)
+
+    def length(geometry) -> float:
+        def convert(coords):
+            x, y = transformer.transform(coords[:, 0], coords[:, 1])
+            return np.column_stack([x, y])
+
+        return float(shapely.transform(geometry, convert).length)
+
+    totals: dict[tuple[str, str], float] = defaultdict(float)
+    for f in features:
+        totals[(f.name or "unnamed", f.kind)] += length(f.geometry)
+    return totals
+
+
+def _line_list(totals, limit: int | None = None) -> str:
+    ranked = sorted(totals.items(), key=lambda item: -item[1])
+    shown = ranked if limit is None else ranked[:limit]
+    text = "; ".join(
+        f"{name} ({kind}, {metres / METRES_PER_KM:.1f} km)" for (name, kind), metres in shown
+    )
+    more = len(ranked) - len(shown)
+    return text + (f"; and {more} more" if more > 0 else "") if text else "none"
+
+
+def preview_features(
+    features: list[dict] | None = None, name: str | None = None, bbox: list[float] | None = None
+) -> str:
+    """Dry run of feature filters: what each would keep and leave out. Changes nothing."""
+    cache = None
+    if name is not None:
+        model_dir = _model_dir(name)
+        cache = model_dir / "cache"
+        spec = load_spec(model_dir / "spec.json")
+        bbox = bbox or list(spec.area.bbox)
+        features = features if features is not None else [f.model_dump() for f in spec.features]
+    if not bbox or not features:
+        raise ValueError("Give a bbox, or the name of a model, and the features to preview.")
+    with using_cache_dir(cache) if cache else contextlib.nullcontext():
+        return _preview(features, tuple(float(v) for v in bbox))
+
+
+def _preview(features: list[dict], area: tuple[float, ...]) -> str:
+    crs = utm_crs_for(area)
+    lines = [f"Preview of {len(features)} features over {area}. Nothing was built or changed."]
+    for feature in features:
+        provider = line_providers.get(feature["provider"])
+        kept = _lengths_m(provider.fetch(area, feature["type"], feature.get("filter", {})), crs)
+        everything = _lengths_m(provider.fetch(area, feature["type"], {}), crs)
+        left_out = {key: metres for key, metres in everything.items() if key not in kept}
+        lines += [
+            "",
+            f"{feature['type']} ({feature['provider']}, filter {json.dumps(feature.get('filter', {}))}):",
+            f"  Keeps {len(kept)} lines: {_line_list(kept)}.",
+            (
+                f"  Leaves out {len(left_out)} of the {len(everything)} the service has: "
+                f"{_line_list(left_out, MAX_LISTED_OUT)}."
+            ),
+        ]
+    return "\n".join(lines)
 
 
 def model_history(name: str) -> str:
