@@ -30,7 +30,7 @@ ELEMENTS = [
 @pytest.fixture
 def osm(monkeypatch):
     provider = Osm()
-    monkeypatch.setattr(provider, "_elements", lambda bbox: ELEMENTS)
+    monkeypatch.setattr(provider, "_elements", lambda bbox, minor=False: ELEMENTS)
     return provider
 
 
@@ -144,3 +144,117 @@ def test_brief_description_is_short_and_points_to_the_full_one(model):
 def test_ref_listing_names_the_road_each_ref_belongs_to(offline_cache):
     text = api.resolve_area(bbox=list(FIXTURE_BBOX))
     assert " = " in text  # refs are listed as "US 40 = Name"
+
+
+def test_a_road_with_a_route_number_but_no_name_goes_by_its_number(osm, monkeypatch):
+    monkeypatch.setattr(
+        osm,
+        "_elements",
+        lambda bbox, minor=False: [way(9, "primary", "", "US 40", [(0, 0), (1, 1)])],
+    )
+    assert names(osm.fetch((0, 0, 3, 3), "road", {"classes": ["primary"]})) == ["US 40"]
+
+
+def test_minor_roads_are_only_downloaded_when_asked_for(osm, monkeypatch):
+    asked = []
+
+    def elements(bbox, minor=False):
+        asked.append(minor)
+        return ELEMENTS
+
+    monkeypatch.setattr(osm, "_elements", elements)
+    osm.fetch((0, 0, 3, 3), "road", {"classes": ["primary"], "include_refs": ["US 40"]})
+    osm.fetch((0, 0, 3, 3), "road", {"classes": ["primary", "service"]})
+    osm.fetch((0, 0, 3, 3), "road", {"classes": ["primary"], "include_names": ["Parsenn Road"]})
+    assert asked == [False, True, True]
+
+
+# --- second round of notes ----------------------------------------------------------------
+
+
+def test_list_changes_are_reported_by_field_and_item():
+    from tactile_terrain.editing import diff_lines
+
+    old = {"features": [{"type": "creek", "filter": {"include_names": ["A"], "order": 3}}]}
+    new = {"features": [{"type": "creek", "filter": {"include_names": ["A", "B"], "order": 3}}]}
+    assert diff_lines(old, new) == ['features[0].filter.include_names: added "B"']
+
+
+def test_history_shows_the_reason_given_for_an_edit(model):
+    api.update_model("m", {"z_multiply": 2}, reason="peaks looked flat")
+    assert "Reason given: peaks looked flat" in api.model_history("m")
+
+
+def test_update_reports_how_the_lines_changed(model):
+    text = api.update_model(
+        "m",
+        {
+            "features": [
+                {
+                    "type": "road",
+                    "provider": "osm",
+                    "style": "flat_top",
+                    "filter": {"classes": ["motorway"]},
+                }
+            ]
+        },
+    )
+    assert "Line changes:" in text
+
+
+def test_named_only_drops_unnamed_streams(monkeypatch):
+    from tactile_terrain.providers.base import LineFeature
+
+    streams = [
+        LineFeature(LineString([(0, 0), (1, 1)]), "Gregory Creek", "stream", {"stream_order": 1}),
+        LineFeature(LineString([(0, 0), (1, 2)]), "", "stream", {"stream_order": 5}),
+    ]
+    provider = nhd.Nhd()
+    monkeypatch.setattr(provider, "_all", lambda bbox: streams)
+    kept = provider.fetch(
+        (0, 0, 1, 1), "creek", {"include_names": ["Gregory Creek"], "named_only": True}
+    )
+    assert [f.name for f in kept] == ["Gregory Creek"]
+
+
+def test_brief_description_honours_requested_sections_with_real_elevations(model):
+    text = api.describe_model("m", sections=[{"x_mm": 40}], brief=True)
+    assert "Requested cross-sections" in text and "North-south section at x = 40 mm" in text
+    assert " m)" in text  # each height is followed by its elevation
+
+
+def test_merge_parallels_keeps_bends_and_side_roads_whole():
+    bend = [LineString([(0, 0), (50, 0)]), LineString([(50, 0), (50, 50)])]  # one road, one bend
+    side = LineString([(25, 0), (25, 40)])  # leaves at right angles from the road
+    merged = merge_parallels([*bend, side], 2.0)
+    assert sum(g.length for g in merged) == pytest.approx(140.0, abs=2.0)
+
+
+def test_merge_parallels_collapses_a_divided_road_but_not_its_bend():
+    one_side = LineString([(0, 0), (60, 0), (60, 60)])
+    other_side = LineString([(0, 1.5), (58.5, 1.5), (58.5, 60)])
+    merged = merge_parallels([one_side, other_side], 3.0)
+    assert sum(g.length for g in merged) == pytest.approx(120.0, abs=6.0)
+
+
+def test_analyzer_flags_a_divided_road_and_offers_the_merge(model):
+    from shapely.geometry import MultiLineString
+
+    from tactile_terrain.analyzers import AnalysisContext
+    from tactile_terrain.analyzers.spacing import Spacing
+    from tactile_terrain.compose import PlacedLine
+    from tactile_terrain.config import load_config
+    from tactile_terrain.pipeline.stages import run_pipeline
+    from tactile_terrain.spec import load_spec
+    from tactile_terrain.styles import resolve_style
+    from tactile_terrain.tactile.profile import load_profile
+
+    cfg = load_config()
+    spec = load_spec(model / "spec.json")
+    hf = run_pipeline(spec, model, cfg.printer(spec.print.printer))["lines"]
+    style = resolve_style("flat_top", load_profile("standard"))
+    twin = MultiLineString([[(10, 10), (60, 10)], [(10, 11), (60, 11)]])
+    hf.lines.append(PlacedLine("Broadway", "road", style, twin))
+    ctx = AnalysisContext(spec, load_profile("standard"), cfg.printer(spec.print.printer), hf, None)
+    found = [s for s in Spacing().analyze(ctx).suggestions if "Broadway" in s.message]
+    assert found and "merge_within_m" in str(found[0].patch)

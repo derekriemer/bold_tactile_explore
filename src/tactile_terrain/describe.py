@@ -255,14 +255,25 @@ def high_low_points(m: DescribeInput) -> list[str]:
 
 
 def _orient(m: DescribeInput, line: PlacedLine, part: LineString) -> list[tuple[float, float]]:
-    """Walk lifts from the lower terminal up, everything else from the south end."""
+    """Walk lifts from the lower terminal up and water downstream, else from the south end."""
     coords = list(part.coords)
     first, last = coords[0], coords[-1]
     if line.feature_type == LIFT_TYPE:
         reverse = _terrain_at(m, *first) > _terrain_at(m, *last)
+    elif _flow_known(m, line, part):
+        reverse = _elevation_at(m, *first) < _elevation_at(m, *last)  # water runs downhill
     else:
         reverse = (last[1], last[0]) < (first[1], first[0])
     return coords[::-1] if reverse else coords
+
+
+def _flow_known(m: DescribeInput, line: PlacedLine, part: LineString) -> bool:
+    """Water direction is read from the ground: only when the two ends differ clearly."""
+    if line.feature_type not in WATER_TYPES:
+        return False
+    (x0, y0), (x1, y1) = part.coords[0], part.coords[-1]
+    drop = abs(_elevation_at(m, x0, y0) - _elevation_at(m, x1, y1))
+    return drop >= m.settings.level_change_m
 
 
 def _runs(m: DescribeInput, coords: list[tuple[float, float]]) -> list[list[Any]]:
@@ -323,7 +334,8 @@ def _walk_text(m: DescribeInput, line: PlacedLine, part: LineString) -> str:
         edge, along = leave
         axis = "x" if edge in ("south", "north") else "y"
         end = f"exits the {edge} edge at {axis} = {along:.0f} mm"
-    return ", then ".join([start, *parts, end]) + "."
+    lead = "Walked downstream (with the flow): " if _flow_known(m, line, part) else ""
+    return lead + ", then ".join([start, *parts, end]) + "."
 
 
 def _lift_text(m: DescribeInput, line: PlacedLine, part: LineString) -> str:
@@ -448,7 +460,7 @@ def _end_text(m: DescribeInput, group: list[PlacedLine], end: tuple[float, float
         return f"leaves the map at the {edge[0]} edge"
     point = Point(x, y)
     names = {g.name for g in group}
-    reach = m.settings.run_end_name_radius_mm
+    reach = m.settings.run_end_touch_mm  # "meets" needs the lines to actually touch
     near = [
         (line.geometry.distance(point), line.name)
         for line in m.hf.lines
@@ -483,22 +495,25 @@ def _story(m: DescribeInput, group: list[PlacedLine]) -> str:
     else:
         heading = COMPASS[_bearing_index(x1 - x0, y1 - y0)]
         ratio = main.length / chord
+        go = "flows" if _flow_known(m, first, main) else "runs"  # water is told downstream
         if first.feature_type == LIFT_TYPE:
             text += f" It runs {heading}."
         elif ratio <= s.straight_ratio:
-            text += f" It runs nearly straight {heading}."
+            text += f" It {go} nearly straight {heading}."
         else:
             across = "east and west" if abs(y1 - y0) >= abs(x1 - x0) else "north and south"
             how = "winds" if ratio >= s.meander_ratio else "wanders"
-            text += f" It generally runs {heading}, and {how} {across} along the way."
-        text += " " + _elevation_text(m, first, group, (x0, y0), (x1, y1), e0, e1, change)
+            text += f" It generally {go} {heading}, and {how} {across} along the way."
+        text += " " + _elevation_text(
+            m, first, group, (x0, y0), (x1, y1), e0, e1, change, _flow_known(m, first, main)
+        )
     if len(parts) > 1:
         text += f" It also has {_count(len(parts) - 1)} shorter separate piece"
         text += "s." if len(parts) > 2 else "."
     return text
 
 
-def _elevation_text(m, first, group, start, end, e0, e1, change) -> str:
+def _elevation_text(m, first, group, start, end, e0, e1, change, flow_known=False) -> str:
     s = m.settings
     heading = COMPASS[_bearing_index(end[0] - start[0], end[1] - start[1])]
     if first.feature_type == LIFT_TYPE:
@@ -506,18 +521,19 @@ def _elevation_text(m, first, group, start, end, e0, e1, change) -> str:
             f"It climbs about {change:.0f} m from the bottom terminal in {_place(m, *start)} "
             f"to the top terminal in {_place(m, *end)}."
         )
-    if abs(e1 - e0) < s.level_change_m:
+    if flow_known:  # the path is already walked downstream, so its end is where the water goes
         return (
+            f"It loses about {change:.0f} m of elevation along the way, and the water then "
+            f"{_end_text(m, group, end)}."
+        )
+    if abs(e1 - e0) < s.level_change_m:
+        text = (
             f"It stays at about the same elevation, within {s.level_change_m:.0f} m, "
             f"and {_end_text(m, group, end)}."
         )
-    if first.feature_type in WATER_TYPES:
-        downhill_end = end if e1 < e0 else start
-        flow = heading if e1 < e0 else OPPOSITE[heading]
-        return (
-            f"The water flows {flow}, losing about {change:.0f} m of elevation, until it "
-            f"{_end_text(m, group, downhill_end)}."
-        )
+        if first.feature_type in WATER_TYPES:
+            text += " The ground is too level to tell which way the water flows."
+        return text
     verb = "climbs" if e1 > e0 else "descends"
     return f"Going {heading} it {verb} about {change:.0f} m, and then {_end_text(m, group, end)}."
 
@@ -655,12 +671,15 @@ def _section_values(m: DescribeInput, axis: str, at_mm: float, step: float) -> l
 def _format_samples(m, samples, span, step, label) -> list[str]:
     g = m.hf.grid_mm
     positions = list(np.arange(0, span + step / 2, step))
-    cells = [
-        f"{label} = {p:g} mm: {samples[min(round(p / g), len(samples) - 1)]:.1f} mm".replace(
-            " ", GLUE
+    to_elevation = m.hf.transform.z_to_elevation
+    cells = []
+    for p in positions:
+        height = float(samples[min(round(p / g), len(samples) - 1)])
+        cells.append(
+            f"{label} = {p:g} mm: {height:.1f} mm ({float(to_elevation(height)):.0f} m)".replace(
+                " ", GLUE
+            )
         )
-        for p in positions
-    ]
     return _wrap(m, "; ".join(cells))
 
 
@@ -765,6 +784,13 @@ def _markdown(title: str, blocks: list[list[str]]) -> str:
     return re.sub(r"\n{3,}", "\n\n", "\n".join(parts)).rstrip("\n") + "\n"
 
 
+def _requested_sections(m: DescribeInput, extra: list[dict[str, Any]]) -> list[str]:
+    lines = ["Requested cross-sections", "Terrain height without raised lines."]
+    for request in extra:
+        lines += _extra_section(m, request)
+    return lines
+
+
 def describe(
     m: DescribeInput,
     extra_sections: list[dict[str, Any]] | None = None,
@@ -780,7 +806,10 @@ def describe(
                 "crossings and cross-sections."
             ),
         ]
-        blocks = [overview(m), warnings, legend(m), distortion(m), more]
+        blocks = [overview(m), warnings, legend(m), distortion(m)]
+        if extra_sections:
+            blocks.append(_requested_sections(m, extra_sections))
+        blocks.append(more)
         return _markdown(f"Tactile model description (brief): {m.spec.name}", blocks)
     blocks = [
         overview(m),

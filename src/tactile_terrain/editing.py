@@ -98,6 +98,11 @@ def _flatten(value: Any, path: str = "") -> dict[str, Any]:
         for key, item in value.items():
             out.update(_flatten(item, f"{path}.{key}" if path else key))
         return out
+    if isinstance(value, list) and value and all(isinstance(item, dict) for item in value):
+        out = {}
+        for n, item in enumerate(value):
+            out.update(_flatten(item, f"{path}[{n}]"))
+        return out
     return {path: value}
 
 
@@ -110,6 +115,30 @@ def diff_lines(old: dict[str, Any], new: dict[str, Any]) -> list[str]:
     before, after = _flatten(old), _flatten(new)
     lines = []
     for key in sorted(before.keys() | after.keys()):
-        if before.get(key) != after.get(key):
-            lines.append(f"{key}: {_show(before.get(key))} → {_show(after.get(key))}")
+        old_value, new_value = before.get(key), after.get(key)
+        if old_value == new_value:
+            continue
+        if isinstance(old_value, list) and isinstance(new_value, list):
+            added = [v for v in new_value if v not in old_value]
+            removed = [v for v in old_value if v not in new_value]
+            parts = [f"added {_show(v)}" for v in added] + [f"removed {_show(v)}" for v in removed]
+            if parts:
+                lines.append(f"{key}: " + ", ".join(parts))
+                continue
+        lines.append(f"{key}: {_show(old_value)} → {_show(new_value)}")
     return lines
+
+
+REASONS_FILE = "history-notes.json"
+
+
+def read_reasons(model_dir: Path) -> dict[str, str]:
+    path = model_dir / REASONS_FILE
+    return json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+
+
+def save_reason(model_dir: Path, number: int, reason: str) -> None:
+    """Remember why the edit that followed saved version `number` was made."""
+    if reason.strip():
+        reasons = read_reasons(model_dir) | {str(number): reason.strip()}
+        (model_dir / REASONS_FILE).write_text(json.dumps(reasons, indent=2), encoding="utf-8")

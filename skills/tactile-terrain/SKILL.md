@@ -34,9 +34,14 @@ units on every number; give positions as mm from the south-west corner, north is
   `exclude_refs` and `exclude_names`. Exclusions are applied last.
 - Before changing a filter, run `preview_features`. It says which lines each feature would keep
   and which it would leave out, with lengths, without building anything.
-- A divided road shows as two parallel lines. Add `"merge_within_m": 30` (the carriageway gap in
-  metres, rounded up) to that feature's filter to keep one.
-- To check a change without reading everything, call `describe_model` with `brief: true`.
+- Creeks: `min_stream_order` keeps streams of at least that order. `include_names` only adds
+  exceptions below it, so on its own it restricts nothing. For named streams only, add
+  `"named_only": true`. Roads take `named_only` too.
+- A divided road shows as two parallel lines. `analyze_model` flags it and its fix sets
+  `"merge_within_m"` in that feature's filter, sized from the measured gap. Apply that fix rather
+  than guessing a distance, then check `update_model`'s "Line changes" for lost length.
+- To check a change without reading everything, call `describe_model` with `brief: true`. It also
+  accepts `sections`, and each cross-section height is followed by its real elevation.
 
 ## Editing
 
@@ -54,6 +59,11 @@ Every edit keeps the previous spec, so you can always back out of a mistake.
 - A `features` change in a merge-patch replaces the whole list. Read `get_spec` first and send
   every feature you want to keep, or revert and try again.
 - Tell the user you reverted and why, in one line.
+- Give `update_model` a short `reason` for each edit; `model_history` shows it later, so a new
+  session can see why a version exists.
+- `update_model` ends with "Line changes": per feature length and line count before and after,
+  and crossings. A WARNING there (length cut by more than 20%, or lost crossings) means revert
+  and rethink unless the user wanted it.
 
 ## Defaults and rules of thumb
 

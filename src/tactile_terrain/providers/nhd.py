@@ -60,8 +60,8 @@ class Nhd:
     """Rivers and streams from the National Hydrography Dataset Plus."""
 
     filters: ClassVar[dict[str, str]] = {
-        "river": "min_stream_order (whole number), include_names (names always kept)",
-        "creek": "min_stream_order (whole number), include_names (names always kept)",
+        "river": "min_stream_order (whole number: streams of at least that order are kept), include_names (names kept even below that order; on its own it restricts nothing), named_only (true drops every unnamed stream)",
+        "creek": "min_stream_order (whole number: streams of at least that order are kept), include_names (names kept even below that order; on its own it restricts nothing), named_only (true drops every unnamed stream)",
     }
     source = SourceInfo(
         name="USGS National Hydrography Dataset Plus (NHDPlus)",
@@ -73,10 +73,12 @@ class Nhd:
         features = self._all(bbox)
         min_order = filter.get("min_stream_order", 0)
         names = filter.get("include_names", [])
+        named_only = filter.get("named_only", False)
         return [
             f
             for f in features
-            if f.attrs["stream_order"] >= min_order or name_matches(f.name, names)
+            if (f.name or not named_only)
+            and (f.attrs["stream_order"] >= min_order or name_matches(f.name, names))
         ]
 
     def _all(self, bbox: BBox) -> list[LineFeature]:

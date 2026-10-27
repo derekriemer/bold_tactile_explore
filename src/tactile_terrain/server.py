@@ -130,14 +130,17 @@ async def create_model(
 
 
 @mcp.tool()
-async def update_model(name: str, changes: dict[str, Any], ctx: Context | None = None) -> str:
+async def update_model(
+    name: str, changes: dict[str, Any], reason: str = "", ctx: Context | None = None
+) -> str:
     """Change a model and rebuild it. changes is a JSON merge-patch of the spec, plus the
     shortcuts z_multiply (factor), crop_percent ({north|south|east|west: percent}),
     drop_feature (type) and revert_to (an earlier version number, or "last" to undo the latest edit). Reports each change as
-    before to after. An invalid change leaves the model untouched."""
+    before to after. An invalid change leaves the model untouched. reason is a short note on why,
+    kept with the version so model_history can show it later."""
     from tactile_terrain import api
 
-    return await _in_thread(ctx, api.update_model, name, changes)
+    return await _in_thread(ctx, api.update_model, name, changes, reason=reason)
 
 
 @mcp.tool()

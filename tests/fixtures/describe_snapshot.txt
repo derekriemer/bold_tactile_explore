@@ -12,8 +12,8 @@ ground is in the north-west, middle and north.
 
 The longest features:
 
-- Fraser River is a river about 4.2 km long. It generally runs north-west, and wanders east and west
-  along the way. The water flows north-west, losing about 110 m of elevation, until it leaves the
+- Fraser River is a river about 4.2 km long. It generally flows north-west, and wanders east and
+  west along the way. It loses about 110 m of elevation along the way, and the water then leaves the
   map at the north edge.
 - Main Street is a road about 4.0 km long. It runs nearly straight north-west. Going north-west it
   descends about 110 m, and then leaves the map at the north edge.
@@ -21,8 +21,8 @@ The longest features:
   terminal in the middle of the map to the top terminal in the south-west part of the map.
 - Explorer Express is a lift about 1.4 km long. It runs south. It climbs about 380 m from the bottom
   terminal in the west part of the map to the top terminal in the south-west part of the map.
-- Jim Creek is a river about 1.1 km long. It generally runs east, and wanders north and south along
-  the way. The water flows west, losing about 40 m of elevation, until it meets Fraser River.
+- Jim Creek is a river about 1.1 km long. It generally flows west, and wanders north and south along
+  the way. It loses about 40 m of elevation along the way, and the water then meets Fraser River.
 - Winter Park Drive is a road about 790 m long. It runs nearly straight north-west. Going north-west
   it descends about 20 m, and then leaves the map at the north edge.
 
@@ -62,15 +62,16 @@ In all, the map has two rivers, three roads and fifteen lifts.
 
 ### Fraser River (river, style rounded_major), 279 mm long
 
-Fraser River is a river about 4.2 km long. It generally runs north-west, and wanders east and west
-along the way. The water flows north-west, losing about 110 m of elevation, until it leaves the map
-at the north edge.
+Fraser River is a river about 4.2 km long. It generally flows north-west, and wanders east and west
+along the way. It loses about 110 m of elevation along the way, and the water then leaves the map at
+the north edge.
 
 Turn by turn:
 
-- Enters the south edge at x = 170 mm, then runs north for 20 mm, then north-west for 39 mm, then
-  west for 18 mm, then north-west for 26 mm, then north for 39 mm, then north-west for 92 mm, then
-  west for 16 mm, then north-west for 30 mm, then exits the north edge at x = 22 mm.
+- Walked downstream (with the flow): enters the south edge at x = 170 mm, then runs north for 20 mm,
+  then north-west for 39 mm, then west for 18 mm, then north-west for 26 mm, then north for 39 mm,
+  then north-west for 92 mm, then west for 16 mm, then north-west for 30 mm, then exits the north
+  edge at x = 22 mm.
 
 ### Main Street (road, style flat_top), 270 mm long
 
@@ -105,13 +106,13 @@ Turn by turn:
 
 ### Jim Creek (river, style rounded_major), 77 mm long
 
-Jim Creek is a river about 1.1 km long. It generally runs east, and wanders north and south along
-the way. The water flows west, losing about 40 m of elevation, until it meets Fraser River.
+Jim Creek is a river about 1.1 km long. It generally flows west, and wanders north and south along
+the way. It loses about 40 m of elevation along the way, and the water then meets Fraser River.
 
 Turn by turn:
 
-- Starts at x = 138 mm, y = 50 mm, then runs north-east for 41 mm, then east for 35 mm, then exits
-  the east edge at y = 70 mm.
+- Walked downstream (with the flow): enters the east edge at y = 70 mm, then runs west for 35 mm,
+  then south-west for 41 mm, then ends at x = 138 mm, y = 50 mm.
 
 ### Winter Park Drive (road, style flat_top), 53 mm long
 
@@ -296,35 +297,43 @@ Terrain height without raised lines, every 10 mm.
 
 ### East-west section at y = 50 mm (25% of the way north)
 
-x = 0 mm: 37.7 mm; x = 10 mm: 37.8 mm; x = 20 mm: 39.2 mm; x = 30 mm: 40.1 mm; x = 40 mm: 41.2 mm;
-x = 50 mm: 41.8 mm; x = 60 mm: 41.3 mm; x = 70 mm: 35.0 mm; x = 80 mm: 28.9 mm; x = 90 mm: 23.1 mm;
-x = 100 mm: 16.7 mm; x = 110 mm: 11.8 mm; x = 120 mm: 11.4 mm; x = 130 mm: 10.6 mm;
-x = 140 mm: 11.2 mm; x = 150 mm: 12.5 mm; x = 160 mm: 14.2 mm; x = 170 mm: 17.2 mm;
-x = 180 mm: 21.3 mm; x = 190 mm: 24.2 mm; x = 200 mm: 24.3 mm
+x = 0 mm: 37.7 mm (3064 m); x = 10 mm: 37.8 mm (3065 m); x = 20 mm: 39.2 mm (3079 m);
+x = 30 mm: 40.1 mm (3088 m); x = 40 mm: 41.2 mm (3099 m); x = 50 mm: 41.8 mm (3105 m);
+x = 60 mm: 41.3 mm (3100 m); x = 70 mm: 35.0 mm (3037 m); x = 80 mm: 28.9 mm (2976 m);
+x = 90 mm: 23.1 mm (2918 m); x = 100 mm: 16.7 mm (2854 m); x = 110 mm: 11.8 mm (2805 m);
+x = 120 mm: 11.4 mm (2801 m); x = 130 mm: 10.6 mm (2793 m); x = 140 mm: 11.2 mm (2799 m);
+x = 150 mm: 12.5 mm (2812 m); x = 160 mm: 14.2 mm (2829 m); x = 170 mm: 17.2 mm (2858 m);
+x = 180 mm: 21.3 mm (2900 m); x = 190 mm: 24.2 mm (2929 m); x = 200 mm: 24.3 mm (2930 m)
 
 ### East-west section at y = 101 mm (50% of the way north)
 
-x = 0 mm: 26.4 mm; x = 10 mm: 22.3 mm; x = 20 mm: 20.9 mm; x = 30 mm: 20.7 mm; x = 40 mm: 21.3 mm;
-x = 50 mm: 21.5 mm; x = 60 mm: 21.0 mm; x = 70 mm: 17.5 mm; x = 80 mm: 12.3 mm; x = 90 mm: 8.9 mm;
-x = 100 mm: 8.4 mm; x = 110 mm: 9.2 mm; x = 120 mm: 12.5 mm; x = 130 mm: 16.6 mm;
-x = 140 mm: 18.9 mm; x = 150 mm: 20.5 mm; x = 160 mm: 20.8 mm; x = 170 mm: 21.3 mm;
-x = 180 mm: 22.2 mm; x = 190 mm: 24.6 mm; x = 200 mm: 26.8 mm
+x = 0 mm: 26.4 mm (2951 m); x = 10 mm: 22.3 mm (2910 m); x = 20 mm: 20.9 mm (2896 m);
+x = 30 mm: 20.7 mm (2894 m); x = 40 mm: 21.3 mm (2900 m); x = 50 mm: 21.5 mm (2902 m);
+x = 60 mm: 21.0 mm (2897 m); x = 70 mm: 17.5 mm (2862 m); x = 80 mm: 12.3 mm (2810 m);
+x = 90 mm: 8.9 mm (2776 m); x = 100 mm: 8.4 mm (2771 m); x = 110 mm: 9.2 mm (2779 m);
+x = 120 mm: 12.5 mm (2812 m); x = 130 mm: 16.6 mm (2853 m); x = 140 mm: 18.9 mm (2876 m);
+x = 150 mm: 20.5 mm (2892 m); x = 160 mm: 20.8 mm (2895 m); x = 170 mm: 21.3 mm (2900 m);
+x = 180 mm: 22.2 mm (2909 m); x = 190 mm: 24.6 mm (2933 m); x = 200 mm: 26.8 mm (2955 m)
 
 ### East-west section at y = 151 mm (75% of the way north)
 
-x = 0 mm: 20.6 mm; x = 10 mm: 20.0 mm; x = 20 mm: 20.2 mm; x = 30 mm: 20.5 mm; x = 40 mm: 17.1 mm;
-x = 50 mm: 11.0 mm; x = 60 mm: 7.9 mm; x = 70 mm: 6.9 mm; x = 80 mm: 5.9 mm; x = 90 mm: 6.5 mm;
-x = 100 mm: 8.2 mm; x = 110 mm: 10.8 mm; x = 120 mm: 12.9 mm; x = 130 mm: 15.1 mm;
-x = 140 mm: 17.2 mm; x = 150 mm: 20.5 mm; x = 160 mm: 23.9 mm; x = 170 mm: 24.7 mm;
-x = 180 mm: 24.0 mm; x = 190 mm: 26.2 mm; x = 200 mm: 24.4 mm
+x = 0 mm: 20.6 mm (2893 m); x = 10 mm: 20.0 mm (2887 m); x = 20 mm: 20.2 mm (2889 m);
+x = 30 mm: 20.5 mm (2892 m); x = 40 mm: 17.1 mm (2858 m); x = 50 mm: 11.0 mm (2797 m);
+x = 60 mm: 7.9 mm (2766 m); x = 70 mm: 6.9 mm (2756 m); x = 80 mm: 5.9 mm (2746 m);
+x = 90 mm: 6.5 mm (2752 m); x = 100 mm: 8.2 mm (2769 m); x = 110 mm: 10.8 mm (2795 m);
+x = 120 mm: 12.9 mm (2816 m); x = 130 mm: 15.1 mm (2838 m); x = 140 mm: 17.2 mm (2859 m);
+x = 150 mm: 20.5 mm (2892 m); x = 160 mm: 23.9 mm (2926 m); x = 170 mm: 24.7 mm (2934 m);
+x = 180 mm: 24.0 mm (2927 m); x = 190 mm: 26.2 mm (2949 m); x = 200 mm: 24.4 mm (2931 m)
 
 ### North-south section at x = 100 mm (50% of the way east)
 
-y = 0 mm: 23.9 mm; y = 10 mm: 21.3 mm; y = 20 mm: 21.0 mm; y = 30 mm: 19.9 mm; y = 40 mm: 18.8 mm;
-y = 50 mm: 16.6 mm; y = 60 mm: 12.2 mm; y = 70 mm: 10.6 mm; y = 80 mm: 9.3 mm; y = 90 mm: 8.6 mm;
-y = 100 mm: 8.3 mm; y = 110 mm: 8.4 mm; y = 120 mm: 8.3 mm; y = 130 mm: 7.5 mm; y = 140 mm: 7.8 mm;
-y = 150 mm: 8.2 mm; y = 160 mm: 10.0 mm; y = 170 mm: 9.8 mm; y = 180 mm: 13.3 mm;
-y = 190 mm: 16.4 mm; y = 200 mm: 19.1 mm
+y = 0 mm: 23.9 mm (2926 m); y = 10 mm: 21.3 mm (2900 m); y = 20 mm: 21.0 mm (2897 m);
+y = 30 mm: 19.9 mm (2886 m); y = 40 mm: 18.8 mm (2875 m); y = 50 mm: 16.6 mm (2853 m);
+y = 60 mm: 12.2 mm (2809 m); y = 70 mm: 10.6 mm (2793 m); y = 80 mm: 9.3 mm (2780 m);
+y = 90 mm: 8.6 mm (2773 m); y = 100 mm: 8.3 mm (2770 m); y = 110 mm: 8.4 mm (2771 m);
+y = 120 mm: 8.3 mm (2770 m); y = 130 mm: 7.5 mm (2762 m); y = 140 mm: 7.8 mm (2765 m);
+y = 150 mm: 8.2 mm (2769 m); y = 160 mm: 10.0 mm (2787 m); y = 170 mm: 9.8 mm (2785 m);
+y = 180 mm: 13.3 mm (2820 m); y = 190 mm: 16.4 mm (2851 m); y = 200 mm: 19.1 mm (2878 m)
 
 ## Tactile legend
 

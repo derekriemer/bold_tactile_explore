@@ -66,6 +66,7 @@ class DescribeSettings(BaseModel):
     summit_grid_mm: float = 1.0  # cell size used to search for summits
     peak_name_radius_mm: float = 3.0  # a named peak this close to a summit names it
     run_end_name_radius_mm: float = 5.0  # named points this close to a run end are mentioned
+    run_end_touch_mm: float = 1.5  # a line end this close to another named line "meets" it
     edge_tolerance_mm: float = 0.5  # how close to the border counts as the edge
     section_fractions_y: list[float] = [0.25, 0.5, 0.75]  # east-west sections, as fractions of y
     section_fractions_x: list[float] = [0.5]  # north-south sections, as fractions of x

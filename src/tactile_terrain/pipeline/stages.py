@@ -4,6 +4,7 @@ stage's output, and its result is cached."""
 
 from __future__ import annotations
 
+import itertools
 from collections import defaultdict
 from collections.abc import Callable
 from dataclasses import dataclass, field, replace
@@ -12,6 +13,7 @@ from typing import Any
 
 import numpy as np
 import shapely
+import shapely.ops
 from rasterio.warp import Resampling, calculate_default_transform, reproject
 from scipy import ndimage
 
@@ -166,15 +168,56 @@ def _to_print_mm(geometry, hf: Heightfield):
     return shapely.transform(geometry, convert)
 
 
+PARALLEL_COS = 0.85  # directions within about 30 degrees of each other count as parallel
+
+
+def _direction(line: Any, at: float) -> np.ndarray:
+    """Unit tangent of `line` at distance `at` along it (signs do not matter, only the axis)."""
+    step = min(line.length / 2, 1.0)
+    a = line.interpolate(max(at - step, 0))
+    b = line.interpolate(min(at + step, line.length))
+    vector = np.array([b.x - a.x, b.y - a.y])
+    length = float(np.hypot(*vector))
+    return vector / length if length else vector
+
+
 def merge_parallels(geometries: list, distance_mm: float) -> list:
-    """Keep the longest line of a divided road and drop the parallel parts within `distance_mm`."""
-    ordered = sorted(geometries, key=lambda g: -g.length)
-    kept = [ordered[0]]
-    for geometry in ordered[1:]:
-        rest = shapely.difference(geometry, shapely.buffer(shapely.union_all(kept), distance_mm))
-        if not rest.is_empty:
-            kept.append(rest)
+    """Keep one of two lines that run side by side within `distance_mm`: a divided road.
+
+    Lines are first joined end to end, so a road with many segments is one line and its own
+    bends and junctions are never mistaken for a twin. Only stretches that are close to a longer
+    line AND point the same way are dropped; a side road that merely meets it is kept whole.
+    """
+    joined = shapely.line_merge(shapely.union_all(geometries))
+    parts = sorted(getattr(joined, "geoms", [joined]), key=lambda g: -g.length)
+    kept = [parts[0]]
+    for part in parts[1:]:
+        reference = shapely.union_all(kept)
+        pieces = list(shapely.segmentize(part, distance_mm).coords)
+        survivors = []
+        for start, end in itertools.pairwise(pieces):
+            piece = shapely.LineString([start, end])
+            if piece.length == 0:
+                continue
+            middle = piece.interpolate(0.5, normalized=True)
+            if reference.distance(middle) <= distance_mm and _runs_alongside(
+                reference, piece, middle
+            ):
+                continue
+            survivors.append(piece)
+        if survivors:
+            kept.append(shapely.line_merge(shapely.union_all(survivors)))
     return kept
+
+
+def _runs_alongside(reference: Any, piece: Any, middle: Any) -> bool:
+    nearest = shapely.ops.nearest_points(reference, middle)[0]
+    for line in getattr(reference, "geoms", [reference]):
+        if line.distance(nearest) < 1e-9:
+            there = _direction(line, line.project(nearest))
+            here = _direction(piece, piece.length / 2)
+            return abs(float(np.dot(there, here))) >= PARALLEL_COS
+    return False
 
 
 def lines(spec: Spec, hf: Heightfield, ctx: Context) -> Heightfield:
@@ -206,7 +249,10 @@ def lines(spec: Spec, hf: Heightfield, ctx: Context) -> Heightfield:
             if merged.is_empty:
                 continue
             claimed[(feature.provider, feature.type)].append(merged)
-            placed.append(PlacedLine(name, feature.type, style, merged))
+            # Unnamed lines share no identity, so each connected piece stands alone instead of
+            # being described as one feature with a made-up course.
+            pieces = [merged] if name else list(getattr(merged, "geoms", [merged]))
+            placed.extend(PlacedLine(name, feature.type, style, piece) for piece in pieces)
     result = compose(hf.z, hf.grid_mm, placed, profile)
     return replace(hf, terrain_z=hf.z, z=result.surface, lines=result.lines, dropped=result.dropped)
 

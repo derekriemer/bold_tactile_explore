@@ -14,16 +14,18 @@ from tactile_terrain.providers.names import name_matches
 from tactile_terrain.registry import line_providers
 
 ROAD_CLASSES = "motorway|trunk|primary|secondary|tertiary"
+MINOR_CLASSES = ("unclassified", "residential", "service", "track")  # fetched only when asked for
 NOT_LINES = {"station", "pylon"}  # aerialway values that are not cables
 POINT_KINDS = {"peak": "peak", "saddle": "saddle"}
 
 
-def build_query(bbox: BBox) -> str:
+def build_query(bbox: BBox, minor: bool = False) -> str:
     west, south, east, north = bbox
     area = f"({south},{west},{north},{east})"
+    classes = "|".join([ROAD_CLASSES, *MINOR_CLASSES]) if minor else ROAD_CLASSES
     return (
         "[out:json][timeout:180];("
-        f'way["highway"~"^({ROAD_CLASSES})(_link)?$"]{area};'
+        f'way["highway"~"^({classes})(_link)?$"]{area};'
         f'way["aerialway"]{area};'
         f'node["natural"~"^(peak|saddle)$"]{area};'
         f'node["mountain_pass"="yes"]{area};'
@@ -40,9 +42,12 @@ class Osm:
 
     filters: ClassVar[dict[str, str]] = {
         "road": (
-            "classes (motorway, trunk, primary, secondary, tertiary), include_refs and "
-            "include_names (always kept, for example US 40 or Baseline Road), exclude_refs and "
-            "exclude_names (always dropped, applied last), merge_within_m (merge same-name parallel "
+            "classes (motorway, trunk, primary, secondary, tertiary, and the minor unclassified, "
+            "residential, service, track, which are only downloaded when asked for), include_refs and "
+            "include_names (always kept, for example US 40 or Parsenn Road; a name also finds minor "
+            "roads), exclude_refs and "
+            "exclude_names (always dropped, applied last), named_only (true drops unnamed roads), "
+            "merge_within_m (merge same-name parallel "
             "lines closer than this many metres, for divided roads)"
         ),
         "lift": "aerialway (all, or a list of types), exclude (list of types to leave out)",
@@ -79,23 +84,24 @@ class Osm:
             points.append(NamedPoint(tags["name"], kind, el["lon"], el["lat"], elevation))
         return points
 
-    def _elements(self, bbox: BBox) -> list[dict]:
-        path = cache_path("osm", bbox, "json")
+    def _elements(self, bbox: BBox, minor: bool = False) -> list[dict]:
+        # Minor roads (service, track...) are a bigger download, so they get their own cache entry.
+        path = cache_path("osm", bbox, "json", **({"minor_roads": True} if minor else {}))
         cached = read_json(path)
         if cached is not None:
             return cached
-        elements = self._download(bbox)
+        elements = self._download(bbox, minor)
         write_json(path, elements)
         return elements
 
-    def _download(self, bbox: BBox) -> list[dict]:
+    def _download(self, bbox: BBox, minor: bool = False) -> list[dict]:
         response = http.request(
-            "POST", load_config().overpass_endpoint, data={"data": build_query(bbox)}
+            "POST", load_config().overpass_endpoint, data={"data": build_query(bbox, minor)}
         )
         return response.json()["elements"]
 
-    def _ways(self, bbox: BBox, tag: str):
-        for el in self._elements(bbox):
+    def _ways(self, bbox: BBox, tag: str, minor: bool = False):
+        for el in self._elements(bbox, minor):
             tags = el.get("tags", {})
             if el["type"] == "way" and tag in tags and len(el.get("geometry", [])) >= 2:
                 line = LineString([(p["lon"], p["lat"]) for p in el["geometry"]])
@@ -107,8 +113,10 @@ class Osm:
         wanted_names = filter.get("include_names", [])
         dropped_refs = filter.get("exclude_refs", [])
         dropped_names = filter.get("exclude_names", [])
+        named_only = filter.get("named_only", False)
+        wants_minor = any(c in MINOR_CLASSES for c in classes or []) or bool(wanted_names)
         out = []
-        for el, tags, line in self._ways(bbox, "highway"):
+        for el, tags, line in self._ways(bbox, "highway", wants_minor):
             highway = tags["highway"]
             base = highway.removesuffix("_link")
             if (
@@ -118,12 +126,16 @@ class Osm:
                 or any(name_matches(r, wanted_refs) for r in _refs(tags))
                 or name_matches(tags.get("name", ""), wanted_names)
             ):
-                if name_matches(tags.get("name", ""), dropped_names) or any(
-                    name_matches(r, dropped_refs) for r in _refs(tags)
+                if (
+                    (named_only and not tags.get("name"))
+                    or name_matches(tags.get("name", ""), dropped_names)
+                    or any(name_matches(r, dropped_refs) for r in _refs(tags))
                 ):
                     continue
                 attrs = {"ref": tags.get("ref", ""), "osm_id": el["id"]}
-                out.append(LineFeature(line, tags.get("name", ""), highway, attrs))
+                # A road with a route number but no name (US 40 outside town) goes by its number.
+                name = tags.get("name") or (_refs(tags) or [""])[0]
+                out.append(LineFeature(line, name, highway, attrs))
         return out
 
     def _lifts(self, bbox: BBox, filter: dict[str, Any]) -> list[LineFeature]:

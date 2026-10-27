@@ -17,7 +17,13 @@ from tactile_terrain import providers  # noqa: F401  (registers the built-in pro
 from tactile_terrain.analyzers import AnalysisContext, format_analysis, run_all
 from tactile_terrain.attribution import write_attribution
 from tactile_terrain.config import load_config
-from tactile_terrain.editing import apply_changes, backup_numbers, diff_lines
+from tactile_terrain.editing import (
+    apply_changes,
+    backup_numbers,
+    diff_lines,
+    read_reasons,
+    save_reason,
+)
 from tactile_terrain.geo import lonlat_transformer, projected_bounds, utm_crs_for
 from tactile_terrain.pipeline.stages import run_pipeline
 from tactile_terrain.providers import nominatim
@@ -351,7 +357,7 @@ def describe_model(name: str, sections: list[dict] | None = None, brief: bool = 
         source_resolution_m=_source_resolution_m(spec, result),
     )
     if brief:
-        return describe(m, brief_warnings=_analysis_text(spec, result, cfg))
+        return describe(m, sections, brief_warnings=_analysis_text(spec, result, cfg))
     return describe(m, sections)
 
 
@@ -374,7 +380,7 @@ def _model_names(cfg) -> list[str]:
     return sorted(p.name for p in root.iterdir() if (p / "spec.json").exists())
 
 
-def update_model(name: str, changes: dict, on_progress=None) -> str:
+def update_model(name: str, changes: dict, on_progress=None, reason: str = "") -> str:
     """Apply a merge-patch and shortcuts to a model's spec, rebuild, and report before -> after.
 
     Shortcuts: z_multiply, crop_percent, drop_feature, revert_to. The previous spec is kept
@@ -397,10 +403,71 @@ def update_model(name: str, changes: dict, on_progress=None) -> str:
         return f"No change: model {name} already has those settings."
     number = max(backup_numbers(model_dir), default=0) + 1
     backup = model_dir / f"spec.{number}.json"
+    cfg = load_config()
+    before_lines = _line_stats(_built_lines(model_dir, cfg, current))
     shutil.copy2(spec_path, backup)
+    save_reason(model_dir, number, reason)
     summary = build_spec(spec, overwrite=True, on_progress=on_progress)
     lines = ["Changes:", *[f"  {c}" for c in changed], f"Previous spec kept as {backup.name}."]
+    after_lines = _line_stats(_built_lines(model_dir, cfg, json.loads(spec.model_dump_json())))
+    lines += _line_change_report(before_lines, after_lines)
     return "\n".join(lines) + "\n\n" + summary
+
+
+LENGTH_DROP_WARN = 0.2  # a filter change that cuts a feature's length by more than this is flagged
+SIGNIFICANT_CHANGE = 0.01
+
+
+def _built_lines(model_dir, cfg, spec_dict: dict):
+    """The placed lines of a spec, from the stage cache when built before. None on failure."""
+    try:
+        spec = Spec.model_validate(spec_dict)
+        with using_cache_dir(model_dir / "cache"):
+            return run_pipeline(spec, model_dir, cfg.printer(spec.print.printer))["lines"]
+    except Exception:  # noqa: BLE001  (a missing before/after is only a missing report)
+        return None
+
+
+def _line_stats(hf) -> dict | None:
+    if hf is None:
+        return None
+    scale = hf.transform.scale_m_per_mm
+    kinds: dict[str, list[float]] = defaultdict(lambda: [0.0, 0])
+    for line in hf.lines:
+        kinds[line.feature_type][0] += line.geometry.length * scale / METRES_PER_KM
+        kinds[line.feature_type][1] += 1
+    crossings = 0
+    for i, a in enumerate(hf.lines):
+        for b in hf.lines[i + 1 :]:
+            if a.name != b.name and a.geometry.intersects(b.geometry):
+                hit = a.geometry.intersection(b.geometry)
+                crossings += sum(1 for p in getattr(hit, "geoms", [hit]) if p.geom_type == "Point")
+    return {"kinds": dict(kinds), "crossings": crossings}
+
+
+def _line_change_report(before: dict | None, after: dict | None) -> list[str]:
+    if before is None or after is None:
+        return []
+    lines = []
+    for kind in sorted(before["kinds"].keys() | after["kinds"].keys()):
+        km0, n0 = before["kinds"].get(kind, (0.0, 0))
+        km1, n1 = after["kinds"].get(kind, (0.0, 0))
+        if n0 == n1 and abs(km1 - km0) <= SIGNIFICANT_CHANGE * max(km0, km1):
+            continue
+        text = f"  {kind}: {km0:.1f} km in {n0} lines → {km1:.1f} km in {n1} lines"
+        if km0 and (km0 - km1) / km0 > LENGTH_DROP_WARN:
+            text += (
+                f". WARNING: this cut the length by {(km0 - km1) / km0:.0%}; check it was meant."
+            )
+        lines.append(text)
+    c0, c1 = before["crossings"], after["crossings"]
+    if c1 < c0:
+        lines.append(f"  Crossings and junctions: {c0} → {c1}. WARNING: connections were lost.")
+    elif c1 != c0:
+        lines.append(f"  Crossings and junctions: {c0} → {c1}.")
+    if not lines:
+        return ["Line changes: none (lengths and connections are the same)."]
+    return ["Line changes:", *lines]
 
 
 def _lengths_m(features, crs: str) -> dict[tuple[str, str], float]:
@@ -487,13 +554,17 @@ def model_history(name: str) -> str:
             "the latest edit. Going back keeps the state you leave as a new version, so it can be undone."
         ),
     ]
+    reasons = read_reasons(model_dir)
     previous = None
-    for label, state in states:
+    for index, (label, state) in enumerate(states):
         if previous is None:
             lines.append(f"{label}: the first spec.")
         else:
             changed = diff_lines(previous, state)
             lines.append(f"{label}: " + ("same as the version before." if not changed else ""))
+            why = reasons.get(str(numbers[index - 1]))
+            if why:
+                lines.append(f"  Reason given: {why}")
             lines += [f"  {c}" for c in changed]
         previous = state
     return "\n".join(lines)

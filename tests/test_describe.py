@@ -256,3 +256,40 @@ def test_output_is_markdown_with_a_title_and_headings():
     text = describe.describe(make_input())
     assert text.startswith("# Tactile model description:")
     assert "\n## Summary\n\n- Model:" in text
+
+
+# --- direction and connections ------------------------------------------------------------
+
+
+def downhill_east():
+    return BASE + (NX - 1 - np.mgrid[0:NY, 0:NX][1]) * 0.1  # high in the west, low in the east
+
+
+@pytest.mark.parametrize("coords", [[(10, 50), (90, 50)], [(90, 50), (10, 50)]])
+def test_water_is_told_downstream_whichever_way_it_is_drawn(coords):
+    creek = line("Second Creek", "creek", "rounded_minor", coords)
+    text = describe.describe(make_input(terrain=downhill_east(), lines=[creek], types=("creek",)))
+    text = " ".join(text.split())  # wrapped lines
+    assert "flows nearly straight east" in text and "runs west" not in text
+    assert "Walked downstream (with the flow): starts at x = 10 mm" in text
+
+
+def test_level_water_does_not_claim_a_direction():
+    creek = line("Flat Creek", "creek", "rounded_minor", [(10, 50), (90, 50)])
+    text = " ".join(describe.describe(make_input(lines=[creek], types=("creek",))).split())
+    assert "too level to tell which way the water flows" in text and "flows nearly" not in text
+
+
+def test_meets_needs_the_lines_to_touch():
+    road = line("Far Road", "road", "flat_top", [(0, 60), (100, 60)])
+    near = line("Near Creek", "creek", "rounded_minor", [(50, 10), (50, 58)])
+    touching = line("Touching Creek", "creek", "rounded_minor", [(20, 10), (20, 60)])
+    story = "\n".join(
+        describe.overview(
+            make_input(
+                terrain=downhill_east(), lines=[road, near, touching], types=("road", "creek")
+            )
+        )
+    )
+    assert "Touching Creek" in story
+    assert story.count("meets Far Road") == 1  # the creek 2 mm short of it does not meet it
