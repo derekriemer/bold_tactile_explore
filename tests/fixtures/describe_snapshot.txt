@@ -265,17 +265,17 @@ Turn by turn:
 
 ## Crossings and junctions
 
-- Fraser River crosses Main Street at x = 158 mm, y = 30 mm. Main Street is on top (1.5 mm tall
+- Fraser River crosses Main Street at x = 158 mm, y = 30 mm. Main Street is on top (1.6 mm tall
   against 1 mm).
 - Fraser River meets Jim Creek at x = 138 mm, y = 50 mm. Fraser River is on top (1 mm tall against
   1 mm).
-- Jim Creek crosses Main Street at x = 143 mm, y = 62 mm. Main Street is on top (1.5 mm tall against
+- Jim Creek crosses Main Street at x = 143 mm, y = 62 mm. Main Street is on top (1.6 mm tall against
   1 mm).
 - Fraser River crosses Village Cabriolet at x = 107 mm, y = 78 mm. Village Cabriolet is on top
   (1.2 mm tall against 1 mm).
-- Unnamed road crosses Main Street at x = 108 mm, y = 139 mm. Unnamed road is on top (1.5 mm tall
-  against 1.5 mm).
-- Fraser River crosses Main Street at x = 30 mm, y = 195 mm. Main Street is on top (1.5 mm tall
+- Unnamed road crosses Main Street at x = 108 mm, y = 139 mm. Unnamed road is on top (1.6 mm tall
+  against 1.6 mm).
+- Fraser River crosses Main Street at x = 30 mm, y = 195 mm. Main Street is on top (1.6 mm tall
   against 1 mm).
 
 ## Close parallels

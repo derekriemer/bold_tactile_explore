@@ -170,7 +170,12 @@ def print_notes(name: str, what: str, report: MeshReport, printer) -> str:
                 f"{report.height_mm:.1f} mm tall."
             ),
             "Orientation: print flat side down, no supports.",
-            f"Layer height: {LAYER_HEIGHT_NOTE} is suitable.",
+            (
+                f"Layer height: this model was built for {printer.layer_height_mm:g} mm layers; "
+                "line heights are whole numbers of layers."
+                if printer.layer_height_mm
+                else f"Layer height: {LAYER_HEIGHT_NOTE} is suitable."
+            ),
             filament_text(report, printer),
             "",
         ]

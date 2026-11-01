@@ -250,3 +250,22 @@ def test_one_named_stream_in_two_styles_is_not_its_own_close_parallel():
         LineString([(30, 20), (60, 20)]),
     )
     assert Spacing().analyze(make_ctx(lines=[a, b])).suggestions == []
+
+
+def test_layer_height_reports_snapping():
+    from tactile_terrain.analyzers.layer_height import LayerHeight
+
+    ctx = make_ctx(features=["rounded_minor"], prn=printer(layer_height_mm=0.2))
+    result = LayerHeight().analyze(ctx)
+    style = result.metrics["styles"]["rounded_minor"]
+    assert style["layers"] == 4
+    assert style["printed_mm"] == pytest.approx(0.8)
+    assert any("prints as 4 layers" in s.message for s in result.suggestions)
+
+
+def test_layer_height_unknown_is_silent():
+    from tactile_terrain.analyzers.layer_height import LayerHeight
+
+    ctx = make_ctx(features=["rounded_minor"], prn=printer())
+    result = LayerHeight().analyze(ctx)
+    assert result.suggestions == [] and result.metrics["layer_height_mm"] is None

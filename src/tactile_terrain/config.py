@@ -19,6 +19,7 @@ class PrinterProfile(BaseModel):
     bed_mm: list[float]
     nozzle_mm: float
     grid_mm: float
+    layer_height_mm: float = 0  # 0 = unknown: line heights are not snapped to whole layers
     bed_margin_mm: float = 0.0
     max_print_hours: float = 0  # 0 = no limit
     max_stl_mb: float = 0  # 0 = no limit
@@ -32,6 +33,7 @@ def _louisville_library() -> PrinterProfile:
         bed_mm=[152, 152, 158],
         nozzle_mm=0.5,
         grid_mm=0.25,
+        layer_height_mm=0.2,
         bed_margin_mm=5,
         max_print_hours=8,
         max_stl_mb=0,
@@ -46,6 +48,7 @@ def _generic_220() -> PrinterProfile:
         bed_mm=[220, 220, 250],
         nozzle_mm=0.4,
         grid_mm=0.2,
+        layer_height_mm=0.2,
         bed_margin_mm=5,
         max_print_hours=0,
         max_stl_mb=0,

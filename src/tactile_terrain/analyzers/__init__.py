@@ -1,6 +1,13 @@
 """Importing this package registers the built-in analyzers."""
 
-from tactile_terrain.analyzers import bed_fit, min_width, relief, resolution, spacing  # noqa: F401
+from tactile_terrain.analyzers import (  # noqa: F401
+    bed_fit,
+    layer_height,
+    min_width,
+    relief,
+    resolution,
+    spacing,
+)
 from tactile_terrain.analyzers.base import (
     AnalysisContext,
     AnalyzerResult,
@@ -9,7 +16,7 @@ from tactile_terrain.analyzers.base import (
 )
 from tactile_terrain.registry import analyzers
 
-ORDER = ["relief", "min_width", "bed_fit", "spacing", "resolution"]
+ORDER = ["relief", "min_width", "layer_height", "bed_fit", "spacing", "resolution"]
 
 
 def run_all(ctx: AnalysisContext) -> dict[str, AnalyzerResult]:

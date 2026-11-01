@@ -23,6 +23,7 @@ import tactile_terrain.warp  # noqa: F401  (registers the identity warp)
 from tactile_terrain.compose import Dropped, PlacedLine, compose
 from tactile_terrain.config import PrinterProfile
 from tactile_terrain.geo import PrintTransform, lonlat_transformer, utm_crs_for
+from tactile_terrain.layers import snap_style
 from tactile_terrain.mesh import mesh_within_size, stl_size_mb
 from tactile_terrain.pipeline.cache import StageCache, stage_key
 from tactile_terrain.providers.base import ElevationGrid
@@ -225,7 +226,7 @@ def lines(spec: Spec, hf: Heightfield, ctx: Context) -> Heightfield:
     placed: list[PlacedLine] = []
     claimed: dict[tuple[str, str], list] = defaultdict(list)  # (provider, type) -> geometry taken
     for feature in spec.features:
-        style = resolve_style(feature.style, profile)
+        style = snap_style(resolve_style(feature.style, profile), ctx.printer.layer_height_mm)
         fetched = line_providers.get(feature.provider).fetch(
             _bbox(spec), feature.type, feature.filter
         )
@@ -306,6 +307,7 @@ STAGES: list[Stage] = [
             [_dump(f) for f in s.features],
             s.style.overrides,
             _dump(load_profile(s.style.tactile_profile)),
+            c.printer.layer_height_mm,
         ],
     ),
     Stage("base", base, lambda s, c: s.print.base_mm),
