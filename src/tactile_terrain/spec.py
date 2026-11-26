@@ -69,9 +69,15 @@ class Feature(_Strict):
     filter: dict[str, Any] = {}
 
 
+# How raised lines are drawn. This fork defaults to dashed; upstream draws solid lines.
+LineRender = Literal["solid", "dashed"]
+DEFAULT_LINE_RENDER: LineRender = "dashed"
+
+
 class Style(_Strict):
     tactile_profile: str = "standard"
     overrides: dict[str, Any] = {}
+    line_render: LineRender = DEFAULT_LINE_RENDER
 
 
 class SamplerInfo(_Strict):
@@ -112,6 +118,9 @@ class Spec(_Strict):
             data.pop("kind", None)
         if data.get("sampler") is None:
             data.pop("sampler", None)
+        style = data.get("style")
+        if isinstance(style, dict) and style.get("line_render") == DEFAULT_LINE_RENDER:
+            style.pop("line_render")  # files written before the option existed stay identical
         return data
 
     @field_validator("name")

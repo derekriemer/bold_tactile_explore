@@ -1,0 +1,17 @@
+Dashed lines verification report, 2026-11-25
+
+Result: all checks passed
+
+Checks
+- Lint (ruff check): pass, 0 s. All checks passed!
+- Default test suite: pass, 181 s. 211 passed, 5 deselected in 179.94s (0:02:59)
+- Golden tests (Tilden builds and the dash-trails 1.0.0 oracle): pass, 24 s. 4 passed, 212 deselected in 22.96s
+
+Environment
+- Python 3.12.14 on Darwin
+- numpy 2.5.4
+- scipy 1.18.1
+- scikit-image 0.26.0
+- skan 0.13.1
+- trimesh 5.2.0
+- manifold3d 3.5.4

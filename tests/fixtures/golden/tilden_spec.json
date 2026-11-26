@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "name": "tilden_berkeley_sample",
+  "mode": "terrain",
+  "area": {
+    "bbox": [
+      -122.272,
+      37.866,
+      -122.214,
+      37.912
+    ],
+    "crs": "auto"
+  },
+  "print": {
+    "printer": "bambu-a1-mini",
+    "long_side_mm": 160.0,
+    "z_exaggeration": 1.5,
+    "base_mm": 3.0
+  },
+  "elevation": {
+    "provider": "usgs3dep",
+    "resolution_m": 10
+  },
+  "features": [
+    {
+      "type": "creek",
+      "provider": "nhd",
+      "style": "rounded_minor",
+      "filter": {
+        "include_names": [
+          "Wildcat Creek",
+          "Strawberry Creek",
+          "Claremont Creek"
+        ],
+        "min_stream_order": 2
+      }
+    },
+    {
+      "type": "road",
+      "provider": "osm",
+      "style": "rounded_major",
+      "filter": {
+        "classes": [
+          "primary"
+        ],
+        "include_names": [
+          "Grizzly Peak Boulevard",
+          "Wildcat Canyon Road",
+          "Canyon Road",
+          "Centennial Drive",
+          "San Pablo Dam Road"
+        ],
+        "merge_within_m": 30
+      }
+    }
+  ],
+  "style": {
+    "tactile_profile": "standard",
+    "overrides": {}
+  },
+  "legend": {},
+  "regions": [],
+  "textures": [],
+  "tiles": null,
+  "built_with": "0.1.0"
+}

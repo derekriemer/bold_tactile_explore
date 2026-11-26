@@ -15,6 +15,14 @@ label_relief_mm = 2.0
 notch_width_mm = 6.0
 notch_depth_mm = 4.0
 
+[dashes]
+# Dashed lines (style.line_render = "dashed"): blocks along each raised line.
+# Same as standard in every preset for now; tune per sensitivity level.
+height_mm = 2.0
+width_mm = 2.0
+length_mm = 2.0
+gap_mm = 2.0
+
 [lines]
 rounded_major = { profile = "rounded", width_mm = 3.2, height_mm = 2.0 }
 rounded_minor = { profile = "rounded", width_mm = 2.4, height_mm = 1.4 }

@@ -23,6 +23,8 @@ dependencies = [
     "pydantic>=2",
     "platformdirs",
     "mcp",
+    "scikit-image>=0.26.0",  # dashes.py relies on 0.26 max_size semantics
+    "skan>=0.13.1",
 ]
 
 [project.scripts]
@@ -36,9 +38,14 @@ build-backend = "uv_build"
 dev = ["pytest", "ruff"]
 
 [tool.pytest.ini_options]
-addopts = "-m 'not network'"
-markers = ["network: tests that hit the network (skipped by default)"]
+addopts = "-m 'not network and not golden'"
+markers = [
+    "network: tests that hit the network (skipped by default)",
+    "golden: slow full-size builds compared with golden fingerprints (run by scripts/verify_dash.py)",
+]
 testpaths = ["tests"]
 
 [tool.ruff]
 line-length = 100
+# The vendored dash-trails 1.0.0 oracle is kept byte-for-byte as released.
+extend-exclude = ["tests/oracle"]

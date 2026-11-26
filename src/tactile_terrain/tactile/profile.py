@@ -30,6 +30,17 @@ class LineStyle(BaseModel):
         return self
 
 
+class DashSettings(BaseModel):
+    """Blocks of a dashed line (style.line_render = "dashed")."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    height_mm: float  # above the ground at the block centre
+    width_mm: float  # across the line
+    length_mm: float  # along the line
+    gap_mm: float  # between blocks along the line
+
+
 class SamplerSettings(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -68,6 +79,7 @@ class TactileProfile(BaseModel):
     notch_depth_mm: float
     lines: dict[str, LineStyle]
     sampler: SamplerSettings
+    dashes: DashSettings | None = None  # required when a model draws dashed lines
 
 
 def _raw(name: str) -> dict:

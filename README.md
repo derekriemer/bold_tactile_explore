@@ -61,6 +61,10 @@ Any other MCP client can run the server directly:
 claude mcp add tactile-terrain -- uv run --directory C:/path/to/bold_tactile_explore tactile-terrain mcp
 ```
 
+## Dashed lines
+
+Raised lines are drawn dashed by default in this fork: a row of small blocks along each line instead of a solid ridge. The block sizes come from the tactile profile's `[dashes]` table. Set `"line_render": "solid"` in a spec's `style` for solid ridges. `uv run python scripts/verify_dash.py` checks the integration against golden builds of the Tilden sample, and writes a plain-text report.
+
 ## Command line
 
 ```bash

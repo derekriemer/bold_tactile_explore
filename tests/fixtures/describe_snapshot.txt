@@ -340,6 +340,10 @@ y = 180 mm: 13.3 mm (2820 m); y = 190 mm: 16.4 mm (2851 m); y = 200 mm: 19.1 mm 
 - River: rounded ridge, 1.6 mm wide and 1 mm tall (style rounded_major, from nhd).
 - Road: flat-topped ridge, 2 mm wide and 1.5 mm tall (style flat_top, from osm).
 - Lift: pointed ridge, 1.2 mm wide and 1.2 mm tall (style pointed, from osm).
+- Every line is drawn dashed instead of solid: a row of raised blocks 2 mm long, 2 mm wide and 2 mm
+  tall above the ground, 2 mm apart, turned to follow the line. The ridge widths above are what the
+  lines would be when solid. A block starts every 4 mm along each line, the pattern centred on each
+  stretch; blocks that would crowd a junction or hang off the map edge are left out.
 
 ## Distortion
 

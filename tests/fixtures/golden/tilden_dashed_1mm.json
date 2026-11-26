@@ -1,0 +1,19 @@
+{
+  "faces": 1284916,
+  "watertight": true,
+  "volume_mm3": 338827.4004090814,
+  "area_mm2": 62428.768909441176,
+  "bounds_mm": [
+    [
+      0.0,
+      0.0,
+      0.0
+    ],
+    [
+      159.8,
+      160.0,
+      27.9876
+    ]
+  ],
+  "source": "additions/golden/tilden_dashed_1mm_v1.stl"
+}

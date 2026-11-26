@@ -6,7 +6,7 @@ from pathlib import Path
 
 SRC = Path(__file__).parent.parent / "src" / "tactile_terrain"
 ALLOWLIST = Path(__file__).parent / "tactile_literal_allowlist.txt"
-SCANNED = ["styles.py", "compose.py", "analyzers", "describe.py", "sampler.py"]
+SCANNED = ["styles.py", "compose.py", "analyzers", "describe.py", "sampler.py", "dashes.py"]
 ALLOWED_INTS = {-1, 0, 1, 2}
 
 

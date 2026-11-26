@@ -340,7 +340,7 @@ def describe_model(name: str, sections: list[dict] | None = None, brief: bool = 
         }
         return describe_sampler(plate, spec, paths, cfg.describe)
     result = run_pipeline(spec, model_dir, cfg.printer(spec.print.printer))
-    hf = result["lines"]
+    hf = result["dash"]  # the composed heightfield, plus the dash blocks when lines are dashed
     m = DescribeInput(
         spec=spec,
         profile=apply_overrides(load_profile(spec.style.tactile_profile), spec.style.overrides),
@@ -657,9 +657,11 @@ def check_print(name: str) -> str:
     )
 
     t = hf.transform
+    dashed = result["dash"].dash is not None and bool(result["dash"].dash.blocks)
+    drawn = "dashed lines of raised blocks" if dashed else "raised lines"
     what = (
         f"a tactile relief map. Terrain is raised from a flat base and rivers, roads and lifts "
-        f"are raised lines. 1 mm = {t.scale_m_per_mm:g} m horizontally, with vertical "
+        f"are {drawn}. 1 mm = {t.scale_m_per_mm:g} m horizontally, with vertical "
         f"exaggeration {t.z_exaggeration:g} times."
     )
     notes = printpack.print_notes(name, what, report, printer)

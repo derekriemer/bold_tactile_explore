@@ -752,7 +752,31 @@ def legend(m: DescribeInput) -> list[str]:
         )
     if not seen:
         lines.append("- No line features are used.")
+    lines += _dash_legend(m)
     return lines
+
+
+def _dash_legend(m: DescribeInput) -> list[str]:
+    """How dashed lines are drawn (style.line_render = "dashed")."""
+    if m.spec.style.line_render != "dashed" or m.hf.dash is None:
+        return []
+    if not m.hf.dash.blocks:
+        return _wrap(
+            m,
+            "Dashed lines are on, but no line is long enough for a block, so lines stay solid.",
+            bullet=True,
+        )
+    d = m.profile.dashes
+    return _wrap(
+        m,
+        f"Every line is drawn dashed instead of solid: a row of raised blocks "
+        f"{d.length_mm:g} mm long, {d.width_mm:g} mm wide and {d.height_mm:g} mm tall above the "
+        f"ground, {d.gap_mm:g} mm apart, turned to follow the line. The ridge widths above are "
+        f"what the lines would be when solid. A block starts every "
+        f"{d.length_mm + d.gap_mm:g} mm along each line, the pattern centred on each stretch; "
+        f"blocks that would crowd a junction or hang off the map edge are left out.",
+        bullet=True,
+    )
 
 
 def distortion(m: DescribeInput) -> list[str]:

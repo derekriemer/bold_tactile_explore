@@ -15,6 +15,13 @@ label_relief_mm = 1.0
 notch_width_mm = 3.0
 notch_depth_mm = 2.0
 
+[dashes]
+# Dashed lines (style.line_render = "dashed"): blocks along each raised line.
+height_mm = 2.0
+width_mm = 2.0
+length_mm = 2.0
+gap_mm = 2.0
+
 [lines]
 rounded_major = { profile = "rounded", width_mm = 1.6, height_mm = 1.0 }
 rounded_minor = { profile = "rounded", width_mm = 1.2, height_mm = 0.7 }

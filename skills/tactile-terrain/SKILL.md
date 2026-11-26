@@ -43,6 +43,15 @@ units on every number; give positions as mm from the south-west corner, north is
 - To check a change without reading everything, call `describe_model` with `brief: true`. It also
   accepts `sections`, and each cross-section height is followed by its real elevation.
 
+## Dashed or solid lines
+
+Lines are drawn dashed by default: each raised line becomes a row of small raised blocks. The
+block height, width, length and gap come from the tactile profile's `dashes` table. To draw
+solid ridges instead, `update_model` with `{"style": {"line_render": "solid"}}`, and
+`{"style": {"line_render": "dashed"}}` turns dashes back on. To change one block size, set it
+under `style.overrides`, for example `{"style": {"overrides": {"dashes": {"height_mm": 1.0}}}}`.
+`describe_model`'s tactile legend says which way the lines are drawn, with the block sizes.
+
 ## Editing
 
 Use `update_model` with the smallest change. Say what changed in before → after form, then run

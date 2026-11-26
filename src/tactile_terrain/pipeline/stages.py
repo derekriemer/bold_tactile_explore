@@ -1,9 +1,10 @@
 """The build pipeline: fetch -> project -> warp -> heightfield -> texture -> lines -> base ->
-tile -> export. Each stage is a pure function of the spec slice it reads plus the previous
+tile -> dash -> export. Each stage is a pure function of the spec slice it reads plus the previous
 stage's output, and its result is cached."""
 
 from __future__ import annotations
 
+import hashlib
 import itertools
 from collections import defaultdict
 from collections.abc import Callable
@@ -20,6 +21,7 @@ from scipy import ndimage
 import tactile_terrain.export.stl
 import tactile_terrain.providers
 import tactile_terrain.warp  # noqa: F401  (registers the identity warp)
+from tactile_terrain import dashes
 from tactile_terrain.compose import Dropped, PlacedLine, compose
 from tactile_terrain.config import PrinterProfile
 from tactile_terrain.geo import PrintTransform, lonlat_transformer, utm_crs_for
@@ -51,6 +53,7 @@ class Heightfield:
     terrain_z: np.ndarray | None = None  # z before line features were added
     lines: list[PlacedLine] = field(default_factory=list)  # kept lines, in print mm
     dropped: list[Dropped] = field(default_factory=list)
+    dash: dashes.DashResult | None = None  # set when lines are drawn dashed
 
 
 @dataclass
@@ -61,6 +64,7 @@ class ExportResult:
     bounds_mm: list[list[float]]
     decimated_tolerance_mm: float | None = None  # set when flat areas were thinned for size
     size_mb: float = 0.0
+    sha256: str = ""  # of the file as written; every version of a model writes the same path
 
 
 def _bbox(spec: Spec) -> tuple[float, float, float, float]:
@@ -265,8 +269,42 @@ def tile(spec: Spec, upstream: Any, ctx: Context) -> Any:
     return upstream  # no tiling until Phase 2
 
 
+def _dash_settings(spec: Spec):
+    profile = apply_overrides(load_profile(spec.style.tactile_profile), spec.style.overrides)
+    if profile.dashes is None:
+        raise ValueError(
+            f"Tactile profile '{profile.name}' has no [dashes] table, which dashed lines need. "
+            "Add one, extend a preset, or set style.line_render to solid."
+        )
+    return profile.dashes
+
+
+def dash(spec: Spec, hf: Heightfield, ctx: Context) -> Heightfield:
+    """Dashed lines: fill the raised ridges back in and place blocks along them."""
+    if spec.style.line_render != "dashed":
+        return hf
+    return replace(hf, dash=dashes.apply(hf.z, hf.grid_mm, _dash_settings(spec)))
+
+
+def _dashed_mesh(hf: Heightfield, settings, max_stl_mb: float):
+    """The dashed mesh; over the size limit, the terrain's flat areas are thinned first and the
+    blocks added to that, leaving the blocks' own share of the budget."""
+    mesh = dashes.build_mesh(hf.dash, hf.grid_mm, settings)
+    if not max_stl_mb or stl_size_mb(mesh) <= max_stl_mb:
+        return mesh, None
+    full_terrain = dashes.heightfield_solid(hf.dash.surface, hf.grid_mm, 0.0)
+    blocks_mb = stl_size_mb(mesh) - stl_size_mb(full_terrain)
+    terrain, tolerance = mesh_within_size(
+        hf.dash.surface, hf.grid_mm, max(max_stl_mb - blocks_mb, 0) or max_stl_mb
+    )
+    return dashes.build_mesh(hf.dash, hf.grid_mm, settings, terrain=terrain), tolerance
+
+
 def export(spec: Spec, hf: Heightfield, ctx: Context) -> ExportResult:
-    mesh, tolerance = mesh_within_size(hf.z, hf.grid_mm, ctx.printer.max_stl_mb)
+    if hf.dash is not None and hf.dash.blocks:
+        mesh, tolerance = _dashed_mesh(hf, _dash_settings(spec), ctx.printer.max_stl_mb)
+    else:  # solid lines, or no line long enough for a block: keep the ridges as they are
+        mesh, tolerance = mesh_within_size(hf.z, hf.grid_mm, ctx.printer.max_stl_mb)
     path = exporters.get("stl")(mesh, ctx.model_dir / f"{spec.name}.stl")
     return ExportResult(
         path,
@@ -275,7 +313,19 @@ def export(spec: Spec, hf: Heightfield, ctx: Context) -> ExportResult:
         mesh.bounds.tolist(),
         tolerance,
         stl_size_mb(mesh),
+        _file_sha256(path),
     )
+
+
+def _file_sha256(path: Path) -> str:
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def _export_still_on_disk(result: ExportResult) -> bool:
+    """A cached export is reusable only if the file still holds that export: an undo or a
+    toggle back rebuilds the same spec after another version overwrote the file."""
+    path = Path(result.path)
+    return path.exists() and bool(result.sha256) and _file_sha256(path) == result.sha256
 
 
 # --- stage table --------------------------------------------------------------------------
@@ -311,10 +361,18 @@ STAGES: list[Stage] = [
     Stage("base", base, lambda s, c: s.print.base_mm),
     Stage("tile", tile, lambda s, c: s.tiles),
     Stage(
+        "dash",
+        dash,
+        lambda s, c: [
+            s.style.line_render,
+            _dump(_dash_settings(s)) if s.style.line_render == "dashed" else None,
+        ],
+    ),
+    Stage(
         "export",
         export,
         lambda s, c: [s.name, c.printer.max_stl_mb],
-        valid=lambda r: Path(r.path).exists(),
+        valid=_export_still_on_disk,
     ),
 ]
 

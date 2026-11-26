@@ -1,0 +1,31 @@
+Dashed lines baseline report, 2026-11-25
+
+Recorded on feature/dash-trails-integration at 8625a3b, before any integration code, with the
+golden fixtures and tests added. (scripts/verify_dash.py did not exist yet, so this was recorded
+by hand from these runs.)
+
+Result: baseline holds
+
+Checks
+- Default test suite (uv run pytest -q): pass. 198 passed, 1 deselected (network), 60 s.
+- Dash off: Tilden rebuilt offline from spec.json and the recorded data matches the print-pack
+  STL made before dashing existed: 1,287,994 faces in the same order, largest vertex
+  difference 0.0000019 mm (float32 rounding). File bytes differ, so tests compare geometry.
+  test_dash_off_rebuilds_the_pre_dash_print_pack: pass.
+- Oracle: dash-trails 1.0.0 (tests/oracle/dash_trails_v1.py) run on the rebuilt mesh at
+  --height 2 matches the 2 mm golden. test_oracle_on_rebuilt_mesh_matches_golden: pass.
+- Dash on and the profile override tests did not exist as code yet (no line_render option).
+
+Golden sources (dash-trails 1.0.0 on the print-pack STL, each about 18 s, 27 line pieces,
+234 blocks)
+- --height 2 (the fork default): 1,284,914 faces, volume 339,763.4 mm³, sha256 27d9491bfa2f…
+- --height 1: 1,284,916 faces, volume 338,827.4 mm³, sha256 43fea3cf86c7…
+
+Not matched
+- additions/tilden_berkeley_dashed_trails_1mm.stl (Nov 7) is not reproduced by 1.0.0 at any
+  height: about 27,000 of 608,000 terrain grid points differ, because its detected ridge band
+  is narrower. It was probably made by an earlier version of the script. You chose the 1.0.0
+  output as the golden instead.
+
+Environment
+- Python 3.12, numpy 2.5.4, scipy 1.18.1, scikit-image 0.26.0, skan 0.13.1, trimesh 5.2.0
